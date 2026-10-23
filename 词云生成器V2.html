@@ -1,0 +1,3266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>词云生成器</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f0efec;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --border: rgba(11, 11, 11, 0.10);
+    --border-strong: rgba(11, 11, 11, 0.18);
+    --accent: #2a78d6;
+    --accent-strong: #256abf;
+    --accent-wash: rgba(42, 120, 214, 0.10);
+    --danger: #d03b3b;
+    --dot: rgba(11, 11, 11, 0.07);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 6px 24px rgba(0, 0, 0, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #262624;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --border: rgba(255, 255, 255, 0.10);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --accent: #3987e5;
+      --accent-strong: #5598e7;
+      --accent-wash: rgba(57, 135, 229, 0.16);
+      --danger: #e66767;
+      --dot: rgba(255, 255, 255, 0.06);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 24px rgba(0, 0, 0, .4);
+    }
+  }
+
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 13px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { display: grid; grid-template-columns: 368px minmax(0, 1fr); height: 100vh; }
+
+  /* ---------- 侧边栏 ---------- */
+  .panel { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; overscroll-behavior: contain; }
+  .panel-head { position: sticky; top: 0; z-index: 3; background: var(--surface); }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .logo { width: 32px; height: 32px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); }
+  .brand h1 { margin: 0; font-size: 15px; font-weight: 650; }
+  .brand p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+  .sec { border-bottom: 1px solid var(--border); }
+  .sec > summary {
+    display: flex; align-items: center; gap: 8px; padding: 12px 18px;
+    cursor: pointer; list-style: none; font-weight: 600; user-select: none;
+  }
+  .sec > summary::-webkit-details-marker { display: none; }
+  .sec > summary:hover { background: var(--surface-2); }
+  .sec > summary .chev { margin-left: auto; color: var(--text-muted); transition: transform .15s ease; }
+  .sec[open] > summary .chev { transform: rotate(90deg); }
+  .badge {
+    font-size: 11px; font-weight: 600; line-height: 18px; padding: 0 7px; border-radius: 999px;
+    color: var(--text-secondary); background: var(--surface-2); font-variant-numeric: tabular-nums;
+  }
+  .sec-body { display: grid; gap: 12px; padding: 2px 18px 18px; }
+  .stack { display: grid; gap: 12px; }
+  .field { display: grid; gap: 5px; min-width: 0; }
+  .field > label, .lbl { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .lbl output { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .field.inline { grid-template-columns: 1fr auto; align-items: center; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { margin: 0; font-size: 12px; color: var(--text-muted); }
+  .muted { color: var(--text-muted); }
+
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; min-width: 0; font: inherit; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--border-strong); border-radius: 8px;
+    padding: 6px 9px; outline: none; transition: border-color .12s, box-shadow .12s;
+  }
+  select { padding: 5px 6px; height: 32px; }
+  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+  textarea { resize: vertical; line-height: 1.6; }
+  input[type=range] { width: 100%; margin: 2px 0; accent-color: var(--accent); }
+  input[type=checkbox] { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); flex: none; }
+  input[type=color] {
+    inline-size: 34px; block-size: 30px; padding: 3px; flex: none;
+    border: 1px solid var(--border-strong); border-radius: 8px; background: var(--page); cursor: pointer;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: none; border-radius: 5px; }
+  input[type=color]::-moz-color-swatch { border: none; border-radius: 5px; }
+  .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--surface); cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s, color .12s;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: translateY(.5px); }
+  .btn:disabled { opacity: .45; cursor: default; transform: none; }
+  .btn:disabled:hover { background: var(--surface); }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn.icon { width: 32px; padding: 0; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn.ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+  .btn.ghost:hover { background: var(--surface-2); color: var(--text-primary); }
+  .btn.danger:hover { color: var(--danger); }
+  .btn svg { width: 15px; height: 15px; flex: none; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; border-radius: 9px; background: var(--surface-2); }
+  .seg button { height: 26px; padding: 0 2px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 12px; white-space: nowrap; }
+  .seg button:hover { color: var(--text-primary); }
+  .seg button[aria-pressed=true] { background: var(--surface); color: var(--text-primary); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px var(--border); }
+
+  /* 字体选择按钮 */
+  .font-btn {
+    display: flex; align-items: center; gap: 6px; width: 100%; height: 32px; padding: 0 8px 0 9px;
+    border: 1px solid var(--border-strong); border-radius: 8px; background: var(--page); color: var(--text-primary);
+    cursor: pointer; text-align: left;
+  }
+  .font-btn:hover { border-color: var(--text-muted); }
+  .font-btn .fb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .font-btn svg { flex: none; width: 14px; height: 14px; color: var(--text-muted); }
+
+  /* 选中词语的属性面板 */
+  .inspector {
+    display: grid; gap: 10px; padding: 12px 18px 14px; border-bottom: 1px solid var(--border);
+    box-shadow: inset 3px 0 0 var(--accent), 0 8px 12px -12px rgba(0, 0, 0, .35);
+  }
+  .insp-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .insp-kicker { flex: none; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-wash); }
+  .insp-head strong { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .insp-note { margin: 0; padding: 7px 9px; border-radius: 8px; background: var(--surface-2); font-size: 12px; color: var(--text-secondary); }
+  .insp-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .unit-input { position: relative; flex: 1; min-width: 0; }
+  .unit-input input { padding-right: 28px; }
+  .unit-input span { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    height: 24px; min-width: 40px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 6px;
+    background: var(--page); color: var(--text-secondary); font-size: 12px; cursor: pointer; font-variant-numeric: tabular-nums;
+  }
+  .chip:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .chip[aria-pressed=true] { border-color: var(--accent); background: var(--accent-wash); color: var(--text-primary); font-weight: 600; }
+  .pin-text { flex: 1; min-width: 0; font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* 添加词语 */
+  .addrow { display: grid; grid-template-columns: minmax(0, 1fr) 62px auto auto; gap: 6px; align-items: center; }
+  .usecolor { display: flex; align-items: center; gap: 5px; padding: 0 2px 0 6px; height: 32px; border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; }
+  .usecolor input[type=color] { inline-size: 24px; block-size: 22px; padding: 1px; border-radius: 6px; border-color: transparent; }
+
+  /* 词语列表 */
+  .wlist { position: relative; border: 1px solid var(--border); border-radius: 10px; max-height: 300px; overflow-y: auto; background: var(--page); }
+  .wrow {
+    display: grid; grid-template-columns: 24px minmax(0, 1fr) auto 66px 22px 22px;
+    gap: 4px; align-items: center; padding: 3px 6px; border-bottom: 1px solid var(--border);
+  }
+  .wrow:last-child { border-bottom: 0; }
+  .wrow.selected { background: var(--accent-wash); }
+  .wrow input[type=color] { inline-size: 22px; block-size: 22px; padding: 1px; border-radius: 6px; border-color: var(--border); }
+  .wrow input[type=text], .wrow input[type=number] { border-color: transparent; background: transparent; padding: 3px 6px; border-radius: 6px; }
+  .wrow input[type=text]:hover, .wrow input[type=number]:hover { border-color: var(--border-strong); }
+  .wrow input[type=number] { text-align: right; font-variant-numeric: tabular-nums; }
+  .icon-btn { width: 22px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; padding: 0; flex: none; }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text-primary); }
+  .icon-btn.del:hover { color: var(--danger); }
+  .icon-btn svg { width: 13px; height: 13px; }
+  .w-flag { font-size: 11px; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .wrow.missed .w-text { color: var(--text-muted); }
+  .wrow.flash { animation: flash 1.1s ease; }
+  @keyframes flash { 0%, 40% { background: var(--accent-wash); } 100% { background: transparent; } }
+  .empty { padding: 22px 12px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+  /* 形状 */
+  .shapes { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .shape-btn {
+    display: grid; justify-items: center; gap: 2px; padding: 6px 0 4px;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--page); cursor: pointer;
+    color: var(--text-secondary);
+  }
+  .shape-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .shape-btn canvas { width: 24px; height: 24px; }
+  .shape-btn span { font-size: 10.5px; line-height: 1.2; }
+  .shape-btn[aria-pressed=true] { border-color: var(--accent); background: var(--accent-wash); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--accent); }
+  .upload { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .upload .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+  /* 颜色 */
+  .palettes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pal-btn {
+    display: grid; gap: 5px; padding: 7px 8px; text-align: left;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--page); cursor: pointer;
+  }
+  .pal-btn:hover { border-color: var(--border-strong); }
+  .pal-btn[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .pal-btn .name { font-size: 12px; color: var(--text-secondary); }
+  .pal-btn[aria-pressed=true] .name { color: var(--text-primary); font-weight: 600; }
+  .strip { display: flex; height: 12px; border-radius: 4px; overflow: hidden; gap: 2px; }
+  .strip i { flex: 1; }
+  .bgrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .bg-sw { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border-strong); cursor: pointer; padding: 0; }
+  .bg-sw[aria-pressed=true] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .bgrow .check { margin-left: auto; }
+
+  /* ---------- 主区域 ---------- */
+  main { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
+  .toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .toolbar .spacer { flex: 1; }
+  .stage {
+    position: relative; display: grid; place-items: center; min-height: 0; overflow: hidden; padding: 24px;
+    background-color: var(--page);
+    background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  /* 触屏：没选中词时可以滚动页面，选中后才接管手势用于拖动 */
+  #cloud { display: block; border-radius: 6px; box-shadow: var(--shadow); transition: opacity .2s ease; touch-action: pan-x pan-y pinch-zoom; outline-offset: 3px; }
+  #cloud.editing { touch-action: none; }
+  #cloud.busy { opacity: .55; cursor: progress; }
+  #cloud.checker { background: repeating-conic-gradient(#e6e5e0 0 25%, #ffffff 0 50%) 0 0 / 16px 16px; }
+  .drop-hint {
+    position: absolute; inset: 12px; display: grid; place-items: center;
+    border: 2px dashed var(--accent); border-radius: 12px; background: var(--accent-wash);
+    color: var(--accent); font-weight: 600; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .15s;
+  }
+  .stage.dragging .drop-hint { opacity: 1; }
+  .statusbar {
+    display: flex; gap: 16px; justify-content: space-between; padding: 7px 16px;
+    font-size: 12px; color: var(--text-secondary); background: var(--surface); border-top: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .statusbar .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .busy-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--accent); animation: pulse .8s ease-in-out infinite alternate; vertical-align: 0; }
+  @keyframes pulse { from { opacity: .25; } to { opacity: 1; } }
+
+  .tooltip {
+    position: fixed; z-index: 50; pointer-events: none; min-width: 96px;
+    padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow);
+    opacity: 0; transition: opacity .08s;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .tooltip .k { font-size: 12px; color: var(--text-secondary); }
+  .tooltip .m { font-size: 11px; color: var(--text-muted); }
+
+  /* 字体弹出列表 */
+  .font-pop {
+    position: fixed; z-index: 70; width: 330px; height: min(470px, calc(100vh - 16px));
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, .2); overflow: hidden;
+  }
+  .fp-search { padding: 10px 10px 6px; }
+  .font-list { position: relative; overflow-y: auto; padding: 0 6px 8px; }
+  .fl-group { position: sticky; top: 0; z-index: 1; padding: 8px 8px 4px; background: var(--surface); font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .font-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px;
+    border: 0; border-radius: 7px; background: transparent; cursor: pointer; text-align: left;
+  }
+  .font-item:hover, .font-item.active { background: var(--surface-2); }
+  .font-item.active { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .font-item[aria-selected=true] { background: var(--accent-wash); box-shadow: inset 0 0 0 1px var(--accent); }
+  .fi-name { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
+  .fi-sample { flex: none; font-size: 14px; color: var(--text-secondary); white-space: nowrap; }
+  .fi-tag { flex: none; font-size: 10.5px; color: var(--text-muted); }
+  .font-item.missing .fi-name, .font-item.missing .fi-sample { opacity: .45; }
+  .fi-del { flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 5px; color: var(--text-muted); }
+  .fi-del:hover { background: var(--surface); color: var(--danger); }
+  .fi-del svg { width: 12px; height: 12px; }
+  .fl-empty { padding: 24px 8px; text-align: center; font-size: 12px; color: var(--text-muted); }
+  .fp-foot { display: grid; gap: 8px; padding: 10px; border-top: 1px solid var(--border); }
+  .fp-custom { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .fp-custom input { height: 28px; padding: 3px 8px; font-size: 12px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; z-index: 80; transform: translate(-50%, 10px);
+    padding: 8px 14px; border-radius: 8px; background: var(--text-primary); color: var(--surface);
+    font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  dialog {
+    width: min(560px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface); color: var(--text-primary); box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .35); }
+  .dlg { display: grid; gap: 12px; padding: 18px 20px; }
+  .dlg h2 { margin: 0; font-size: 16px; }
+  .dlg-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .dlg-actions .muted { margin-right: auto; font-size: 12px; }
+  .row3 { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--text-secondary); }
+  .row3 label { display: flex; align-items: center; gap: 6px; }
+  .row3 input[type=number] { width: 64px; padding: 4px 6px; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    .panel { order: 2; border-right: 0; overflow: visible; }
+    .panel-head { position: static; }
+    main { order: 1; height: 70vh; }
+    .statusbar .muted { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <header class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4.5 4.5 0 0 1-.5 9.5z"/><path d="M9 13h6M10.5 15.5h3"/></svg>
+        </div>
+        <div>
+          <h1>词云生成器</h1>
+          <p>添加词语，设置颜色、字号与形状</p>
+        </div>
+      </header>
+
+      <!-- 选中词语 -->
+      <section class="inspector" id="insp" hidden aria-label="选中词语">
+        <div class="insp-head">
+          <span class="insp-kicker">选中</span>
+          <strong id="inspTitle"></strong>
+          <button class="icon-btn del" id="inspDelete" type="button" title="删除（Delete）" aria-label="删除">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+          </button>
+          <button class="icon-btn" id="inspClose" type="button" title="取消选中（Esc）" aria-label="取消选中">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p class="insp-note" id="inspNote" hidden></p>
+        <div class="field">
+          <label for="inspAngle">旋转角度 <span class="muted">正数为顺时针</span></label>
+          <div class="insp-row">
+            <div class="unit-input"><input id="inspAngle" type="number" min="-180" max="180" step="1"><span>°</span></div>
+            <button class="btn sm" id="inspAngleAuto" type="button">自动</button>
+          </div>
+          <div class="chips" id="inspAngles">
+            <button class="chip" type="button" data-a="0">0°</button>
+            <button class="chip" type="button" data-a="90">90°</button>
+            <button class="chip" type="button" data-a="-90">-90°</button>
+            <button class="chip" type="button" data-a="45">45°</button>
+            <button class="chip" type="button" data-a="-45">-45°</button>
+            <button class="chip" type="button" data-a="30">30°</button>
+            <button class="chip" type="button" data-a="-30">-30°</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="inspSize">字号</label>
+            <div class="insp-row">
+              <div class="unit-input"><input id="inspSize" type="number" min="6" max="400" step="1"><span>px</span></div>
+              <button class="btn sm" id="inspSizeAuto" type="button">自动</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="lbl">字体</span>
+            <button class="font-btn" id="inspFont" type="button"><span class="fb-name"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <span class="lbl">颜色</span>
+            <div class="insp-row"><input type="color" id="inspColor" aria-label="颜色"><button class="btn sm" id="inspColorAuto" type="button">自动</button></div>
+          </div>
+          <div class="field">
+            <span class="lbl">位置</span>
+            <div class="insp-row"><span class="pin-text" id="inspPinText"></span><button class="btn sm" id="inspUnpin" type="button">解除固定</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 词语 -->
+    <details class="sec" open id="secWords">
+      <summary>词语 <span class="badge" id="wcount">0</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="addrow">
+          <input id="newWord" type="text" placeholder="输入词语，回车添加" maxlength="40" aria-label="词语">
+          <input id="newWeight" type="number" value="10" min="0" step="any" title="权重：越大字越大" aria-label="权重">
+          <label class="usecolor" title="勾选后为这个词指定颜色">
+            <input id="newUseColor" type="checkbox" aria-label="指定颜色">
+            <input id="newColor" type="color" value="#e34948" aria-label="颜色">
+          </label>
+          <button class="btn primary" id="addBtn">添加</button>
+        </div>
+        <p class="hint">权重越大字越大，设为 0 可暂时隐藏。点行尾的调节按钮（或直接点画布上的词）可以单独设置角度、字号和字体。</p>
+        <div class="btns">
+          <button class="btn sm" id="importBtn">批量导入 / 文本统计</button>
+          <button class="btn sm" id="sortBtn">按权重排序</button>
+          <button class="btn sm" id="sampleBtn">示例</button>
+          <button class="btn sm ghost danger" id="clearBtn">清空</button>
+        </div>
+        <div class="wlist" id="wlist" aria-label="词语列表"></div>
+      </div>
+    </details>
+
+    <!-- 形状 -->
+    <details class="sec" open>
+      <summary>形状<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="shapes" id="shapes"></div>
+        <div class="field" data-when="shape:text">
+          <label for="shapeText">形状文字</label>
+          <input id="shapeText" type="text" data-set="shapeText" maxlength="12" placeholder="例如：爱 / 2026 / AI">
+        </div>
+        <div class="stack" data-when="shape:image">
+          <div class="upload">
+            <input type="file" id="maskFile" accept="image/*" hidden>
+            <button class="btn sm" id="maskBtn">上传图片</button>
+            <span class="muted" id="maskName">未选择（也可以把图片拖到画布上）</span>
+          </div>
+          <div class="field">
+            <label>用作形状的区域</label>
+            <div class="seg" data-seg="maskMode">
+              <button data-v="dark">深色部分</button><button data-v="light">浅色部分</button><button data-v="alpha">不透明部分</button>
+            </div>
+          </div>
+          <div class="field" data-when="maskMode:dark|light">
+            <label class="lbl">亮度阈值 <output data-out="maskThreshold"></output></label>
+            <input type="range" min="20" max="240" step="1" data-set="maskThreshold">
+          </div>
+        </div>
+        <p class="hint" data-when="shape:text|image">文字和图片形状比较细碎，建议开启下方「方向与排布」里的「重复词语填满形状」。</p>
+        <label class="check"><input type="checkbox" data-set="stretch"> 拉伸形状铺满画布</label>
+        <label class="check"><input type="checkbox" data-set="showOutline"> 预览时显示形状底纹（不会导出）</label>
+      </div>
+    </details>
+
+    <!-- 颜色 -->
+    <details class="sec" open>
+      <summary>颜色<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="seg" data-seg="colorMode">
+          <button data-v="palette">配色方案</button><button data-v="random">随机</button><button data-v="single">单色</button><button data-v="gradient">按权重渐变</button>
+        </div>
+        <div class="palettes" id="palettes" data-when="colorMode:palette"></div>
+        <div class="field inline" data-when="colorMode:single">
+          <label>文字颜色</label><input type="color" data-set="singleColor">
+        </div>
+        <div class="row2" data-when="colorMode:gradient">
+          <div class="field inline"><label>权重小</label><input type="color" data-set="gradFrom"></div>
+          <div class="field inline"><label>权重大</label><input type="color" data-set="gradTo"></div>
+        </div>
+        <div data-when="colorMode:palette|random"><button class="btn sm" id="recolorBtn">换一种颜色分配</button></div>
+        <div class="field">
+          <label>背景</label>
+          <div class="bgrow">
+            <input type="color" data-set="bg" aria-label="背景颜色">
+            <span id="bgSwatches" class="bgrow"></span>
+            <label class="check"><input type="checkbox" data-set="transparent"> 透明</label>
+          </div>
+        </div>
+        <p class="hint">在词语列表里点色块，可以单独给某个词设颜色。</p>
+      </div>
+    </details>
+
+    <!-- 字体与字号 -->
+    <details class="sec" open>
+      <summary>字体与字号<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="row2">
+          <div class="field">
+            <span class="lbl">字体</span>
+            <button class="font-btn" id="fontBtn" type="button"><span class="fb-name"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+          </div>
+          <div class="field">
+            <label for="weightSel">粗细</label>
+            <select id="weightSel" data-set="fontWeight">
+              <option value="300">细</option><option value="400">常规</option><option value="700">粗</option><option value="900">特粗</option>
+            </select>
+          </div>
+        </div>
+        <div class="upload">
+          <button class="btn sm" id="fontUploadSide" type="button">上传字体文件</button>
+          <span class="muted" id="fontHint">正在检测本机字体…</span>
+        </div>
+        <div class="field">
+          <label class="lbl">最小字号 <output data-out="minSize" data-unit="px"></output></label>
+          <input type="range" min="6" max="60" step="1" data-set="minSize">
+        </div>
+        <div class="field">
+          <label class="lbl">最大字号 <output data-out="maxSize" data-unit="px"></output></label>
+          <input type="range" min="16" max="240" step="1" data-set="maxSize">
+        </div>
+        <div class="field">
+          <label>权重 → 字号</label>
+          <div class="seg" data-seg="scale"><button data-v="linear">线性</button><button data-v="sqrt">平方根</button><button data-v="log">对数</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 方向与排布 -->
+    <details class="sec" open>
+      <summary>方向与排布<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="field">
+          <label>文字方向</label>
+          <div class="seg" data-seg="rotateMode"><button data-v="none">全部水平</button><button data-v="hv">横竖混排</button><button data-v="four">多角度</button><button data-v="random">任意角度</button><button data-v="custom">指定角度</button></div>
+        </div>
+        <div class="field" data-when="rotateMode:custom">
+          <label for="rotAngles">使用这些角度 <span class="muted">逗号分隔，正数顺时针</span></label>
+          <input id="rotAngles" type="text" data-set="rotAngles" placeholder="例如：0, 90, 45, -45">
+          <p class="hint">每个词从中随机选一个。某个角度多写几次，出现得就更多，如 <code>0, 0, 0, 90</code>。</p>
+        </div>
+        <div class="field" data-when="rotateMode:hv|four|random">
+          <label class="lbl">旋转的词占比 <output data-out="rotateRatio" data-fmt="pct"></output></label>
+          <input type="range" min="0" max="1" step="0.05" data-set="rotateRatio">
+        </div>
+        <div class="row2" data-when="rotateMode:random">
+          <div class="field"><label class="lbl">最小角度 <output data-out="rotMin" data-unit="°"></output></label><input type="range" min="-90" max="90" step="5" data-set="rotMin"></div>
+          <div class="field"><label class="lbl">最大角度 <output data-out="rotMax" data-unit="°"></output></label><input type="range" min="-90" max="90" step="5" data-set="rotMax"></div>
+        </div>
+        <p class="hint">单独设置过角度的词不受这里影响。</p>
+        <div class="field">
+          <label class="lbl">词间距 <output data-out="padding" data-unit="px"></output></label>
+          <input type="range" min="0" max="12" step="1" data-set="padding">
+        </div>
+        <div class="field">
+          <label>布局精度</label>
+          <div class="seg" data-seg="precision"><button data-v="2">精细</button><button data-v="3">标准</button><button data-v="5">快速</button></div>
+        </div>
+        <label class="check"><input type="checkbox" data-set="shrink"> 放不下时自动缩小字号</label>
+        <label class="check"><input type="checkbox" data-set="repeat"> 重复词语填满形状</label>
+      </div>
+    </details>
+
+    <!-- 画布 -->
+    <details class="sec" open>
+      <summary>画布与导出<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sec-body">
+        <div class="field"><label for="sizePreset">尺寸</label><select id="sizePreset"></select></div>
+        <div class="row2">
+          <div class="field"><label>宽 (px)</label><input type="number" min="200" max="4000" step="10" data-set="width"></div>
+          <div class="field"><label>高 (px)</label><input type="number" min="200" max="4000" step="10" data-set="height"></div>
+        </div>
+        <div class="field">
+          <label>PNG 导出倍率</label>
+          <div class="seg" data-seg="exportScale"><button data-v="1">1×</button><button data-v="2">2×</button><button data-v="3">3×</button></div>
+        </div>
+        <div class="field">
+          <span class="lbl">项目文件</span>
+          <div class="btns">
+            <button class="btn sm" id="saveProjBtn" type="button">保存项目</button>
+            <button class="btn sm" id="openProjBtn" type="button">打开项目</button>
+          </div>
+          <p class="hint">把词语、单独设置和全部选项存成一个 .json 文件，换浏览器或换电脑都能接着编辑（上传的字体需要另外保存）。</p>
+          <input type="file" id="projFile" accept=".json,application/json" hidden>
+        </div>
+        <div><button class="btn sm ghost" id="resetBtn">恢复默认设置</button></div>
+      </div>
+    </details>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <button class="btn" id="shuffleBtn" title="同样的词换一种排列（固定位置的词不动）">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+        重新排布
+      </button>
+      <button class="btn icon" id="undoBtn" type="button" aria-label="撤销" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button class="btn icon" id="redoBtn" type="button" aria-label="重做" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+      </button>
+      <button class="btn ghost" id="unpinBtn" hidden title="所有拖动过的词恢复自动排布"></button>
+      <div class="spacer"></div>
+      <button class="btn" id="copyBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        复制图片
+      </button>
+      <button class="btn" id="svgBtn">导出 SVG</button>
+      <button class="btn primary" id="pngBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+        导出 PNG
+      </button>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="cloud" tabindex="0" role="img" aria-label="词云预览。点击词语选中后可拖动，方向键微调位置"></canvas>
+      <div class="drop-hint">松开鼠标：图片用作形状，字体文件添加为字体</div>
+    </div>
+    <div class="statusbar">
+      <span id="status">准备中…</span>
+      <span class="muted" id="hintText"></span>
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tip" role="tooltip"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<div class="font-pop" id="fontPop" hidden>
+  <div class="fp-search"><input type="text" id="fontSearch" placeholder="搜索字体，↑↓ 选择，回车确定" aria-label="搜索字体" aria-controls="fontList"></div>
+  <div class="font-list" id="fontList" role="listbox" aria-label="字体"></div>
+  <div class="fp-foot">
+    <label class="check"><input type="checkbox" id="showMissing"> 显示本机未检测到的字体 <span class="muted" id="missingCount"></span></label>
+    <div class="fp-custom">
+      <input type="text" id="customFont" placeholder="输入其他字体名称，如 Noto Sans SC" aria-label="字体名称">
+      <button class="btn sm" id="customFontBtn" type="button">使用</button>
+    </div>
+    <div class="btns">
+      <button class="btn sm" id="fontUploadBtn" type="button">上传字体文件</button>
+      <button class="btn sm" id="localFontsBtn" type="button" title="需要 Chrome 或 Edge，浏览器会询问权限">读取本机全部字体</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" multiple hidden>
+
+<dialog id="importDlg">
+  <form method="dialog" class="dlg">
+    <h2>批量导入</h2>
+    <div class="seg" id="importTabs">
+      <button type="button" data-t="lines" aria-pressed="true">按行导入</button>
+      <button type="button" data-t="text" aria-pressed="false">从文章统计词频</button>
+    </div>
+    <div class="stack" data-pane="lines">
+      <p class="hint">每行一个词，后面可以跟权重和颜色（颜色以 # 开头），用空格、逗号或冒号分隔，例如 <code>人工智能 100 #2a78d6</code>。没写权重的按 1 计算。</p>
+      <textarea id="linesInput" rows="10" placeholder="人工智能 100&#10;数据, 80&#10;创新：60 #eb6834&#10;未来 50"></textarea>
+    </div>
+    <div class="stack" data-pane="text" hidden>
+      <p class="hint">粘贴一段文字，自动分词并统计出现次数作为权重（中文分词由浏览器内置的 Intl.Segmenter 完成）。</p>
+      <textarea id="textInput" rows="10" placeholder="在这里粘贴文章…"></textarea>
+      <div class="row3">
+        <label>最少字数 <input type="number" id="minLen" value="2" min="1" max="10"></label>
+        <label>保留前 <input type="number" id="topN" value="80" min="5" max="500"> 个</label>
+        <label class="check"><input type="checkbox" id="useStop" checked> 过滤常见虚词</label>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="replaceAll" checked> 替换现有词语（取消勾选则合并到现有列表）</label>
+    <div class="dlg-actions">
+      <span class="muted" id="importPreview"></span>
+      <button class="btn" type="button" id="cancelImport">取消</button>
+      <button class="btn primary" type="submit" id="doImport">导入</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const DEG = Math.PI / 180;
+  // 角度归一到 [-180, 180)
+  const normDeg = d => ((d + 180) % 360 + 360) % 360 - 180;
+  const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const UNDO_KEY = IS_MAC ? '⌘Z' : 'Ctrl+Z';
+  const REDO_KEY = IS_MAC ? '⇧⌘Z' : 'Ctrl+Shift+Z';
+
+  /* ======================= 常量 ======================= */
+  const STORE_KEY = 'wordcloud-studio:v1';
+  const LOCAL_FONTS_KEY = 'wordcloud-studio:local-fonts';
+  const MAX_EXPORT_PX = 16e6;   // Safari 单个画布上限约 1677 万像素
+  const UNDO_LIMIT = 60;
+
+  const PALETTES = [
+    { id: 'classic', name: '经典', colors: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'] },
+    { id: 'warm', name: '暖阳', colors: ['#c92a2a', '#e8590c', '#f08c00', '#d6336c', '#a61e4d', '#e67700'] },
+    { id: 'ocean', name: '海洋', colors: ['#1864ab', '#0b7285', '#1c7ed6', '#0c8599', '#3b5bdb', '#087f5b'] },
+    { id: 'forest', name: '森林', colors: ['#2b8a3e', '#5c940d', '#087f5b', '#8b5e34', '#66a80f', '#0b7285'] },
+    { id: 'candy', name: '糖果', colors: ['#e64980', '#be4bdb', '#7950f2', '#4c6ef5', '#15aabf', '#12b886', '#f59f00'] },
+    { id: 'morandi', name: '莫兰迪', colors: ['#7b6b77', '#8f7a6b', '#66786c', '#687a90', '#9a756e', '#5d6b7a', '#8c7b58'] },
+    { id: 'neon', name: '霓虹（配深色背景）', colors: ['#ff6b6b', '#ffd43b', '#69db7c', '#4dabf7', '#da77f2', '#ff922b', '#3bc9db'] },
+    { id: 'ink', name: '墨色', colors: ['#111111', '#3d3d3d', '#5f5f5f', '#7a7a7a'] },
+  ];
+
+  const BG_SWATCHES = ['#ffffff', '#faf6ee', '#eef2f6', '#1e2235', '#111111'];
+
+  const SIZE_PRESETS = [
+    ['1000x680', '1000 × 680 横版'],
+    ['800x800', '800 × 800 方形'],
+    ['1200x630', '1200 × 630 分享封面'],
+    ['1080x1440', '1080 × 1440 竖版'],
+    ['1920x1080', '1920 × 1080 宽屏'],
+  ];
+
+  const SAMPLE = `人工智能 100
+数据 82
+创新 78
+未来 74
+设计 66
+云计算 60
+算法 58
+机器学习 56
+开源 52
+用户体验 48
+效率 46
+协作 44
+产品 42
+增长 40
+安全 38
+可视化 36
+深度学习 34
+自动化 33
+大模型 32
+智能 30
+开发者 28
+生态 27
+架构 26
+JavaScript 25
+数字化 24
+平台 23
+探索 22
+Python 21
+连接 20
+灵感 20
+创意 19
+互联网 18
+移动 17
+芯片 16
+算力 16
+效能 15
+敏捷 15
+迭代 14
+沟通 14
+团队 13
+愿景 13
+Cloud 12
+品质 12
+细节 12
+简洁 11
+优雅 11
+Design 11
+专注 10
+好奇心 10
+学习 9
+分享 9
+成长 8
+梦想 8`;
+
+  const STOP = new Set(('的 了 和 是 在 也 就 都 而 及 与 着 或 一个 没有 我们 你们 他们 她们 它们 这 那 这个 那个 这些 那些 有 我 你 他 她 它 不 人 会 对 上 下 中 为 以 之 等 被 把 让 从 到 说 要 去 能 还 可以 什么 因为 所以 但是 但 如果 已经 自己 一 很 啊 吧 呢 吗 呀 哦 嗯 并 并且 而且 然后 就是 还是 只是 这样 那样 其 其中 以及 通过 进行 一些 一种 可能 没 又 再 才 更 最 得 地 过 来 给 向 于 由 将 比 跟 同 该 每 各 此 些 么 啥 哪 谁 能够 需要 应该 这里 那里 时候 现在 我的 你的 他的 ' +
+    'the a an and or of to in is are was were be been being for on with as at by it its this that these those from but not no so if then than too very can will just do does did have has had i you he she we they me him her us them my your his our their what which who whom when where why how all any both each few more most other some such only own same don should now about into over after before again further once here there up down out off under also').split(/\s+/));
+
+  /* ======================= 字体 ======================= */
+  const SYS_STACK = 'system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+  const CJK = '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC"';
+  // 英文字体不含汉字，后面接中文字体，避免汉字落到奇怪的默认字体上
+  const FALLBACK = {
+    s: `${CJK}, sans-serif`,
+    r: '"Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif',
+    m: `${CJK}, monospace`,
+    h: `${CJK}, cursive`,
+  };
+  const qf = f => `"${String(f).replace(/["\\<>&;{}]/g, '').trim()}"`;
+  const localCss = f => `${qf(f)}, ${FALLBACK.s}`;
+
+  // 通用字体：自带后备字体，任何电脑上都能显示
+  const GENERIC_FONTS = [
+    ['系统默认', SYS_STACK],
+    ['通用黑体', '"PingFang SC", "Microsoft YaHei", "Heiti SC", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif'],
+    ['通用宋体', '"Songti SC", "SimSun", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif'],
+    ['通用楷体', '"Kaiti SC", "STKaiti", "KaiTi", "BiauKai", serif'],
+    ['通用仿宋', '"FangSong", "STFangsong", serif'],
+  ];
+
+  // [显示名, 字体家族（可多个别名）, 类型 s=无衬线 r=衬线 m=等宽 h=手写/装饰]
+  const NAMED_FONTS = [
+    ['中文字体', [
+      ['苹方', 'PingFang SC', 's'],
+      ['微软雅黑', 'Microsoft YaHei', 's'],
+      ['思源黑体', ['Source Han Sans SC', 'Noto Sans CJK SC', 'Noto Sans SC'], 's'],
+      ['思源宋体', ['Source Han Serif SC', 'Noto Serif CJK SC', 'Noto Serif SC'], 'r'],
+      ['黑体', 'SimHei', 's'],
+      ['宋体', 'SimSun', 'r'],
+      ['新宋体', 'NSimSun', 'r'],
+      ['楷体', 'KaiTi', 'r'],
+      ['仿宋', 'FangSong', 'r'],
+      ['等线', 'DengXian', 's'],
+      ['隶书', 'LiSu', 'r'],
+      ['幼圆', 'YouYuan', 's'],
+      ['华文黑体', ['STHeiti', 'Heiti SC'], 's'],
+      ['华文细黑', 'STXihei', 's'],
+      ['华文宋体', ['STSong', 'Songti SC'], 'r'],
+      ['华文中宋', 'STZhongsong', 'r'],
+      ['华文楷体', ['STKaiti', 'Kaiti SC'], 'r'],
+      ['华文仿宋', 'STFangsong', 'r'],
+      ['华文隶书', 'STLiti', 'r'],
+      ['华文行楷', ['STXingkai', 'Xingkai SC'], 'h'],
+      ['华文新魏', 'STXinwei', 'r'],
+      ['华文琥珀', 'STHupo', 'h'],
+      ['华文彩云', 'STCaiyun', 'h'],
+      ['方正舒体', 'FZShuTi', 'h'],
+      ['方正姚体', 'FZYaoti', 's'],
+      ['冬青黑体', 'Hiragino Sans GB', 's'],
+      ['兰亭黑', 'Lantinghei SC', 's'],
+      ['圆体', 'Yuanti SC', 's'],
+      ['魏碑', 'Weibei SC', 'r'],
+      ['手札体', 'Hannotate SC', 'h'],
+      ['翩翩体', 'HanziPen SC', 'h'],
+      ['文泉驿微米黑', 'WenQuanYi Micro Hei', 's'],
+      ['文泉驿正黑', 'WenQuanYi Zen Hei', 's'],
+      ['霞鹜文楷', ['LXGW WenKai', 'LXGW WenKai GB'], 'r'],
+      ['得意黑', 'Smiley Sans', 's'],
+      ['阿里巴巴普惠体', ['Alibaba PuHuiTi', 'Alibaba PuHuiTi 2.0', 'Alibaba PuHuiTi 3.0'], 's'],
+      ['HarmonyOS Sans', ['HarmonyOS Sans SC', 'HarmonyOS Sans'], 's'],
+      ['MiSans', 'MiSans', 's'],
+      ['OPPO Sans', 'OPPOSans', 's'],
+      ['站酷快乐体', 'ZCOOL KuaiLe', 'h'],
+      ['站酷黄油体', 'ZCOOL QingKe HuangYou', 'h'],
+    ]],
+    ['英文 · 无衬线', [
+      ['Arial', 'Arial', 's'], ['Helvetica', 'Helvetica', 's'], ['Helvetica Neue', 'Helvetica Neue', 's'],
+      ['Verdana', 'Verdana', 's'], ['Tahoma', 'Tahoma', 's'], ['Trebuchet MS', 'Trebuchet MS', 's'],
+      ['Segoe UI', 'Segoe UI', 's'], ['Calibri', 'Calibri', 's'], ['Century Gothic', 'Century Gothic', 's'],
+      ['Gill Sans', ['Gill Sans', 'Gill Sans MT'], 's'], ['Futura', 'Futura', 's'], ['Avenir', ['Avenir', 'Avenir Next'], 's'],
+      ['Franklin Gothic', 'Franklin Gothic Medium', 's'], ['Lucida Grande', 'Lucida Grande', 's'],
+      ['Roboto', 'Roboto', 's'], ['Open Sans', 'Open Sans', 's'], ['Lato', 'Lato', 's'],
+      ['Montserrat', 'Montserrat', 's'], ['Inter', 'Inter', 's'], ['Noto Sans', 'Noto Sans', 's'],
+      ['DejaVu Sans', 'DejaVu Sans', 's'], ['Ubuntu', 'Ubuntu', 's'],
+    ]],
+    ['英文 · 衬线', [
+      ['Times New Roman', 'Times New Roman', 'r'], ['Georgia', 'Georgia', 'r'], ['Garamond', ['Garamond', 'EB Garamond'], 'r'],
+      ['Palatino', ['Palatino Linotype', 'Palatino', 'Book Antiqua'], 'r'], ['Baskerville', ['Baskerville', 'Baskerville Old Face'], 'r'],
+      ['Cambria', 'Cambria', 'r'], ['Constantia', 'Constantia', 'r'], ['Didot', 'Didot', 'r'], ['Bodoni', ['Bodoni 72', 'Bodoni MT'], 'r'],
+      ['Hoefler Text', 'Hoefler Text', 'r'], ['Noto Serif', 'Noto Serif', 'r'], ['Merriweather', 'Merriweather', 'r'],
+      ['Playfair Display', 'Playfair Display', 'r'], ['DejaVu Serif', 'DejaVu Serif', 'r'],
+    ]],
+    ['英文 · 装饰与手写', [
+      ['Impact', 'Impact', 's'], ['Arial Black', 'Arial Black', 's'], ['Rockwell', 'Rockwell', 'r'],
+      ['Copperplate', ['Copperplate', 'Copperplate Gothic Light'], 'r'], ['Papyrus', 'Papyrus', 'h'],
+      ['Comic Sans MS', 'Comic Sans MS', 'h'], ['Chalkboard', ['Chalkboard SE', 'Chalkboard'], 'h'], ['Marker Felt', 'Marker Felt', 'h'],
+      ['Brush Script', ['Brush Script MT', 'Brush Script Std'], 'h'], ['Lucida Handwriting', 'Lucida Handwriting', 'h'],
+      ['Segoe Print', 'Segoe Print', 'h'], ['Segoe Script', 'Segoe Script', 'h'], ['Bradley Hand', 'Bradley Hand', 'h'],
+      ['Snell Roundhand', 'Snell Roundhand', 'h'], ['Zapfino', 'Zapfino', 'h'],
+    ]],
+    ['英文 · 等宽', [
+      ['Courier New', 'Courier New', 'm'], ['Consolas', 'Consolas', 'm'], ['Menlo', 'Menlo', 'm'], ['Monaco', 'Monaco', 'm'],
+      ['SF Mono', 'SF Mono', 'm'], ['Lucida Console', 'Lucida Console', 'm'], ['Cascadia Code', 'Cascadia Code', 'm'],
+      ['Source Code Pro', 'Source Code Pro', 'm'], ['JetBrains Mono', 'JetBrains Mono', 'm'], ['Fira Code', 'Fira Code', 'm'],
+      ['DejaVu Sans Mono', 'DejaVu Sans Mono', 'm'], ['Ubuntu Mono', 'Ubuntu Mono', 'm'],
+    ]],
+  ];
+
+  const CATALOG = [
+    { group: '通用（任何电脑都能显示）', items: GENERIC_FONTS.map(([name, css]) => ({ name, css, generic: true, available: true })) },
+    ...NAMED_FONTS.map(([group, list]) => ({
+      group,
+      items: list.map(([name, fam, kind]) => {
+        const families = [].concat(fam);
+        return { name, families, css: `${families.map(qf).join(', ')}, ${FALLBACK[kind]}`, available: true };
+      }),
+    })),
+  ];
+  const FONT_EXT = { ttf: 'truetype', otf: 'opentype', woff: 'woff', woff2: 'woff2' };
+
+  const uploaded = new Map();   // family -> { family, name, ext, buf, face, css }
+  let localFamilies = [];       // 通过 queryLocalFonts 读到的本机字体
+  let fontStats = { avail: 0, missing: 0 };
+  let fontsDetected = false;
+
+  // 检测字体是否安装：比较「候选字体 + 通用字体」与「只用通用字体」的文字度量，不需要读像素
+  const pctx = document.createElement('canvas').getContext('2d');
+  const PROBE_TEXT = 'Wg永和九年ag';
+  function fontSig(css) {
+    pctx.font = `32px ${css}`;
+    const m = pctx.measureText(PROBE_TEXT);
+    return [m.width, m.actualBoundingBoxLeft, m.actualBoundingBoxRight, m.actualBoundingBoxAscent, m.actualBoundingBoxDescent]
+      .map(v => (v || 0).toFixed(2)).join(',');
+  }
+  const installedCache = new Map();
+  let baseSigs = null;
+  function isInstalled(family) {
+    if (uploaded.has(family)) return true;
+    if (installedCache.has(family)) return installedCache.get(family);
+    // 三种通用字体都比较一次：某款字体恰好是其中一种的默认字体时，和另外两种仍然不同
+    baseSigs = baseSigs || ['monospace', 'serif', 'sans-serif'].map(g => [g, fontSig(g)]);
+    const ok = baseSigs.some(([g, sig]) => fontSig(`${qf(family)}, ${g}`) !== sig);
+    installedCache.set(family, ok);
+    return ok;
+  }
+  function detectFonts() {
+    let avail = 0, missing = 0;
+    for (const g of CATALOG) {
+      for (const it of g.items) {
+        if (it.generic) continue;
+        it.available = it.families.some(isInstalled);
+        it.available ? avail++ : missing++;
+      }
+    }
+    fontStats = { avail, missing };
+    fontsDetected = true;
+  }
+  function ensureFontsDetected() {
+    if (fontsDetected) return;
+    detectFonts();
+    updateFontHint();
+  }
+  function fontEntries() {
+    return [
+      ...CATALOG.flatMap(g => g.items),
+      ...[...uploaded.values()].map(u => ({ name: u.family, css: u.css, available: true, uploaded: u })),
+      ...localFamilies.map(f => ({ name: f, css: localCss(f), available: true, families: [f] })),
+    ];
+  }
+  function fontName(css) {
+    if (!css) return '跟随全局';
+    const e = fontEntries().find(x => x.css === css);
+    if (e) return e.name;
+    const m = /^\s*"?([^",]+)"?/.exec(css);
+    return m ? m[1].trim() : '默认';
+  }
+
+  /* ======================= 形状定义 ======================= */
+  // 每个形状在 u,v ∈ [-1,1] 的方框内判断“是否在形状内”，A 为方框宽高比（'fill' 表示随画布拉伸）
+  function inPoly(p, x, y) {
+    let inside = false;
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      const [xi, yi] = p[i], [xj, yj] = p[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function fitPoly(pts) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hw = (x1 - x0) / 2, hh = (y1 - y0) / 2;
+    return { pts: pts.map(([x, y]) => [(x - cx) / hw, (y - cy) / hh]), A: hw / hh };
+  }
+  function polyShape(name, pts) {
+    const fp = fitPoly(pts);
+    return { name, A: fp.A, f: (u, v) => inPoly(fp.pts, u, v) };
+  }
+  function regular(n, start = -Math.PI / 2) {
+    return Array.from({ length: n }, (_, i) => { const a = start + i * 2 * Math.PI / n; return [Math.cos(a), Math.sin(a)]; });
+  }
+  function starPts(n, inner) {
+    return Array.from({ length: n * 2 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / n, r = i % 2 ? inner : 1; return [r * Math.cos(a), r * Math.sin(a)]; });
+  }
+  const CLOUD = [[-0.52, 0.18, 0.40], [-0.12, -0.16, 0.52], [0.38, -0.06, 0.44], [0.66, 0.24, 0.32]];
+  const DROP_TRI = [[0, -1], [0.59, -0.077], [-0.59, -0.077]];
+
+  const SHAPES = {
+    circle: { name: '圆形', A: 1, f: (u, v) => u * u + v * v <= 1 },
+    ellipse: { name: '椭圆', A: 'fill', f: (u, v) => u * u + v * v <= 1 },
+    heart: {
+      name: '心形', A: 1.02,
+      f: (u, v) => { const x = u * 1.14, y = 0.115 - v * 1.115, a = x * x + y * y - 1; return a * a * a - x * x * y * y * y <= 0; },
+    },
+    star: polyShape('五角星', starPts(5, 0.5)),
+    diamond: { name: '菱形', A: 0.82, f: (u, v) => Math.abs(u) + Math.abs(v) <= 1 },
+    triangle: polyShape('三角形', regular(3)),
+    square: { name: '正方形', A: 1, f: () => true },
+    rect: { name: '矩形', A: 'fill', f: () => true },
+    pentagon: polyShape('五边形', regular(5)),
+    hexagon: polyShape('六边形', regular(6, 0)),
+    cloud: {
+      name: '云朵', A: 1.5,
+      f: (u, v) => {
+        const x = 0.03 + u * 0.95, y = -0.05 + v * 0.63;
+        if (y >= 0.02 && y <= 0.58 && x >= -0.52 && x <= 0.66) return true;
+        return CLOUD.some(([cx, cy, r]) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r);
+      },
+    },
+    drop: { name: '水滴', A: 0.7, f: (u, v) => { const x = u * 0.7; return x * x + (v - 0.3) ** 2 <= 0.49 || inPoly(DROP_TRI, x, v); } },
+    text: { name: '文字' },
+    image: { name: '图片' },
+  };
+
+  /* ======================= 状态 ======================= */
+  const DEFAULTS = {
+    shape: 'circle', stretch: false, showOutline: true,
+    shapeText: '爱', maskImage: null, maskName: '', maskMode: 'dark', maskThreshold: 160,
+    colorMode: 'palette', palette: 'classic', singleColor: '#2a78d6', gradFrom: '#86b6ef', gradTo: '#0d366b', colorSeed: 0,
+    bg: '#ffffff', transparent: false,
+    fontFamily: SYS_STACK, fontWeight: '700', minSize: 12, maxSize: 96, scale: 'sqrt',
+    rotateMode: 'hv', rotateRatio: 0.3, rotMin: -60, rotMax: 60, rotAngles: '0, 90, 45, -45',
+    padding: 2, precision: 3, shrink: true, repeat: false, seed: 1,
+    width: 1000, height: 680, exportScale: 2,
+  };
+  // 只影响上色、不需要重新排布的设置
+  const PAINT_KEYS = new Set(['colorMode', 'palette', 'singleColor', 'gradFrom', 'gradTo', 'colorSeed', 'bg', 'transparent', 'showOutline']);
+  // 读取本地存储 / 项目文件时的取值校验
+  const ENUMS = {
+    shape: Object.keys(SHAPES), maskMode: ['dark', 'light', 'alpha'], colorMode: ['palette', 'random', 'single', 'gradient'],
+    palette: PALETTES.map(p => p.id), fontWeight: ['300', '400', '700', '900'], scale: ['linear', 'sqrt', 'log'],
+    rotateMode: ['none', 'hv', 'four', 'random', 'custom'], precision: [2, 3, 5], exportScale: [1, 2, 3],
+  };
+  const RANGES = {
+    maskThreshold: [20, 240], minSize: [6, 60], maxSize: [16, 240], rotateRatio: [0, 1], rotMin: [-90, 90], rotMax: [-90, 90],
+    padding: [0, 12], width: [200, 4000], height: [200, 4000],
+  };
+  const HEX_KEYS = new Set(['singleColor', 'gradFrom', 'gradTo', 'bg']);
+  const isHex6 = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+  const cleanCss = v => (typeof v === 'string' && v.trim() ? v.replace(/[<>{};]/g, '').slice(0, 300) : null);
+
+  // 词语：angle/size/font 为 null 表示跟随全局设置；pin 为拖动后固定的位置（占画布宽高的比例）
+  const state = { words: [], settings: { ...DEFAULTS } };
+  let nextId = 1;
+  let layout = null;        // 最近一次排布结果
+  let layoutSeq = 0;
+  let runToken = 0;
+  let layoutBusy = false;
+  let layoutPending = false; // 拖动中途要求的重新排布，等松手再做
+  let sel = null;           // 选中的词 { id, p }，p 为画布上的那一个（可能是重复填充的副本）
+  let hoverP = null;
+  let drag = null;
+  let keyCommit = null;     // 键盘微调：连续按键合并成一次提交
+
+  const mkWord = ({ text, weight, color = null }) => ({ id: nextId++, text, weight, color, angle: null, size: null, font: null, pin: null });
+  const cloneWord = w => ({ ...w, pin: w.pin && { ...w.pin } });
+  const wordById = id => state.words.find(w => w.id === id);
+  const mainOf = id => layout?.placed.find(q => q.id === id && !q.repeat) || null;
+  const autoSize = (t, S) => S.minSize + t * (S.maxSize - S.minSize);
+  const floorSize = S => Math.max(6, S.minSize * 0.6);
+
+  function sanitize(d) {
+    const num = (v, a, b) => (typeof v === 'number' && Number.isFinite(v) ? clamp(v, a, b) : null);
+    const words = Array.isArray(d?.words)
+      ? d.words
+        .filter(w => w && typeof w.text === 'string' && w.text.trim())
+        .slice(0, 3000)
+        .map(w => {
+          const weight = +w.weight;
+          return {
+            id: nextId++,
+            text: w.text.slice(0, 40),
+            weight: Number.isFinite(weight) && weight >= 0 ? weight : 1,
+            color: isHex6(w.color) ? w.color.toLowerCase() : null,
+            angle: num(w.angle, -180, 180),
+            size: num(w.size, 6, 400),
+            font: cleanCss(w.font),
+            pin: w.pin && Number.isFinite(w.pin.x) && Number.isFinite(w.pin.y)
+              ? { x: clamp(w.pin.x, 0, 1), y: clamp(w.pin.y, 0, 1), rot: Number.isFinite(w.pin.rot) ? w.pin.rot : 0, size: num(w.pin.size, 6, 400) }
+              : null,
+          };
+        })
+      : null;
+    const settings = { ...DEFAULTS };
+    const src = d?.settings && typeof d.settings === 'object' ? d.settings : {};
+    for (const k of Object.keys(DEFAULTS)) {
+      const v = src[k];
+      if (v === undefined) continue;
+      if (ENUMS[k]) { if (ENUMS[k].includes(v)) settings[k] = v; }
+      else if (RANGES[k]) { if (typeof v === 'number' && Number.isFinite(v)) settings[k] = clamp(v, ...RANGES[k]); }
+      else if (HEX_KEYS.has(k)) { if (isHex6(v)) settings[k] = v.toLowerCase(); }
+      else if (k === 'maskImage') { if (typeof v === 'string' && v.startsWith('data:image/')) settings[k] = v; }
+      else if (k === 'fontFamily') { const c = cleanCss(v); if (c) settings[k] = c; }
+      else if (typeof v === typeof DEFAULTS[k]) settings[k] = typeof v === 'string' ? v.slice(0, 200) : v;
+    }
+    settings.width = Math.round(settings.width);
+    settings.height = Math.round(settings.height);
+    if (settings.maxSize < settings.minSize) settings.maxSize = settings.minSize;
+    if (settings.rotMax < settings.rotMin) settings.rotMax = settings.rotMin;
+    return { words, settings };
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const { words, settings } = sanitize(JSON.parse(raw));
+        state.words = words || [];
+        state.settings = settings;
+        return;
+      }
+    } catch { /* 读取失败就用示例数据 */ }
+    state.words = parseLines(SAMPLE).map(mkWord);
+  }
+
+  // 浏览器里的持久化：词语和设置放 localStorage；字体文件、形状图片这类大数据放 IndexedDB
+  const db = (() => {
+    let dbp = null;
+    const open = () => {
+      if (!dbp) {
+        dbp = new Promise((res, rej) => {
+          const r = indexedDB.open('wordcloud-studio', 2);
+          r.onupgradeneeded = () => {
+            const d = r.result;
+            if (!d.objectStoreNames.contains('fonts')) d.createObjectStore('fonts', { keyPath: 'family' });
+            if (!d.objectStoreNames.contains('assets')) d.createObjectStore('assets');
+          };
+          r.onsuccess = () => { r.result.onversionchange = () => r.result.close(); res(r.result); };
+          r.onerror = () => rej(r.error);
+        });
+        dbp.catch(() => { dbp = null; });
+      }
+      return dbp;
+    };
+    const run = async (store, mode, fn) => {
+      const d = await open();
+      return new Promise((res, rej) => {
+        const tx = d.transaction(store, mode);
+        const req = fn(tx.objectStore(store));
+        tx.oncomplete = () => res(req.result);
+        tx.onerror = tx.onabort = () => rej(tx.error);
+      });
+    };
+    return {
+      fontsAll: () => run('fonts', 'readonly', s => s.getAll()),
+      fontPut: rec => run('fonts', 'readwrite', s => s.put(rec)),
+      fontDel: family => run('fonts', 'readwrite', s => s.delete(family)),
+      get: key => run('assets', 'readonly', s => s.get(key)),
+      put: (key, val) => run('assets', 'readwrite', s => s.put(val, key)),
+      del: key => run('assets', 'readwrite', s => s.delete(key)),
+    };
+  })();
+
+  let saveTimer = 0;
+  let quotaWarned = false;
+  let assetsReady = false;  // 形状图片从 IndexedDB 读回来之前不同步，免得把它误删
+  let storedMask;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 300);
+  }
+  function flushSave() {
+    clearTimeout(saveTimer);
+    const words = state.words.map(({ text, weight, color, angle, size, font, pin }) => ({ text, weight, color, angle, size, font, pin }));
+    const { maskImage, ...rest } = state.settings;
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ words, settings: rest }));
+      quotaWarned = false;
+    } catch {
+      if (!quotaWarned) { quotaWarned = true; toast('浏览器存储空间不足，最近的修改没能保存。可以用「保存项目」存成文件'); }
+    }
+    if (assetsReady && maskImage !== storedMask) {
+      storedMask = maskImage;
+      (maskImage ? db.put('mask', maskImage) : db.del('mask')).catch(() => {
+        if (maskImage) toast('形状图片没能保存到浏览器，刷新后需要重新上传');
+      });
+    }
+  }
+
+  /* ======================= 撤销 / 重做 ======================= */
+  // 快照包含词语和当前画布上每个词的位置；排布重新生成后，位置快照作废，撤销时改为按词语重新排布
+  const undoStack = [], redoStack = [];
+  function snapshot() {
+    const L = layout;
+    return {
+      words: state.words.map(cloneWord),
+      layoutId: L ? L.id : 0,
+      geo: L ? { placed: L.placed.map(p => ({ ...p })), missed: new Set(L.missed), repeats: L.repeats, total: L.total, edited: L.edited } : null,
+      selId: sel ? sel.id : null,
+      selIdx: sel?.p && L ? L.placed.indexOf(sel.p) : -1,
+    };
+  }
+  function pushUndo() {
+    undoStack.push(snapshot());
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+    syncUndo();
+  }
+  function restore(s) {
+    state.words = s.words.map(cloneWord);
+    const L = layout;
+    const alive = s.selId != null && wordById(s.selId);
+    hoverP = null;
+    if (L && s.geo && s.layoutId === L.id && !layoutBusy) {
+      L.placed = s.geo.placed.map(p => ({ ...p }));
+      L.missed = new Set(s.geo.missed);
+      L.repeats = s.geo.repeats;
+      L.total = s.geo.total;
+      L.edited = s.geo.edited;
+      const p = L.placed[s.selIdx];
+      sel = alive ? { id: s.selId, p: p && p.id === s.selId ? p : mainOf(s.selId) } : null;
+      renderList(); paintDisplay(); updateStatus(); renderInspector(); updateSelUi();
+    } else {
+      sel = alive ? { id: s.selId, p: null } : null;
+      renderList(); renderInspector(); scheduleLayout(0);
+    }
+    save();
+  }
+  function undo() {
+    flushKeyCommit();
+    if (drag || !undoStack.length) return;
+    redoStack.push(snapshot());
+    restore(undoStack.pop());
+    syncUndo();
+  }
+  function redo() {
+    flushKeyCommit();
+    if (drag || !redoStack.length) return;
+    undoStack.push(snapshot());
+    restore(redoStack.pop());
+    syncUndo();
+  }
+  function syncUndo() {
+    $('#undoBtn').disabled = !undoStack.length;
+    $('#redoBtn').disabled = !redoStack.length;
+  }
+  // 输入框里连续输入只记一次撤销：聚焦后第一次修改时记录，失焦或提交后重置
+  const beginEdit = el => { if (!el._undoOpen) { pushUndo(); el._undoOpen = true; } };
+  const endEdit = el => { el._undoOpen = false; };
+
+  /* ======================= 工具函数 ======================= */
+  function hash(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return () => {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  // 让出主线程：MessageChannel 不像 setTimeout 那样在后台标签页被限流到每秒一次
+  const yieldTask = (() => {
+    if (globalThis.scheduler && typeof scheduler.yield === 'function') return () => scheduler.yield();
+    const ch = new MessageChannel(), q = [];
+    ch.port1.onmessage = () => q.shift()();
+    return () => new Promise(r => { q.push(r); ch.port2.postMessage(0); });
+  })();
+  const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 300));
+
+  function hexToRgb(h) {
+    h = h.replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('');
+  }
+  const toLin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const fromLin = c => { c = clamp(c, 0, 1); return 255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055); };
+  function toOklab([r, g, b]) {
+    r = toLin(r); g = toLin(g); b = toLin(b);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [
+      0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+    ];
+  }
+  function fromOklab([L, a, b]) {
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+    return [
+      fromLin(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+      fromLin(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+      fromLin(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s),
+    ];
+  }
+  // 在 OKLab 空间插值，渐变中段不会发灰
+  function mixColor(h1, h2, t) {
+    const a = toOklab(hexToRgb(h1)), b = toOklab(hexToRgb(h2));
+    return rgbToHex(...fromOklab(a.map((v, i) => v + (b[i] - v) * t)));
+  }
+  const isDark = hex => toOklab(hexToRgb(hex))[0] < 0.6;
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return rgbToHex(f(0) * 255, f(8) * 255, f(4) * 255);
+  }
+
+  // 词的颜色：自定义 > 颜色模式。按词本身取色，所以增删其他词不会让它“变色”
+  function colorFor(word, t) {
+    if (word.color) return word.color;
+    const S = state.settings;
+    switch (S.colorMode) {
+      case 'single': return S.singleColor;
+      case 'gradient': return mixColor(S.gradFrom, S.gradTo, t);
+      case 'random': {
+        const h = hash(word.text + '#' + S.colorSeed);
+        const dark = !S.transparent && isDark(S.bg);
+        return hslToHex(h % 360, 60 + (h >>> 9) % 25, dark ? 62 + (h >>> 14) % 12 : 36 + (h >>> 14) % 14);
+      }
+      default: {
+        const pal = (PALETTES.find(p => p.id === S.palette) || PALETTES[0]).colors;
+        return pal[hash(word.text + '#' + S.colorSeed) % pal.length];
+      }
+    }
+  }
+
+  /* ======================= 文本解析 ======================= */
+  const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const NUM_RE = /^-?\d+(\.\d+)?$/;
+  const normHex = h => { h = h.slice(1).toLowerCase(); return '#' + (h.length === 3 ? h.replace(/./g, c => c + c) : h); };
+
+  // 行尾的权重和颜色顺序不限；颜色必须带 #，避免 100000 这样的六位数权重被当成颜色
+  function parseLines(text) {
+    const out = [];
+    for (let line of text.split(/\r?\n/)) {
+      line = line.trim();
+      if (!line) continue;
+      const toks = line.split(/[\s,，;；:：|]+/).filter(Boolean);
+      let color = null, weight = null;
+      for (let i = 0; i < 2 && toks.length > 1; i++) {
+        const t = toks[toks.length - 1];
+        if (color == null && HEX_RE.test(t)) color = normHex(toks.pop());
+        else if (weight == null && NUM_RE.test(t)) weight = parseFloat(toks.pop());
+        else break;
+      }
+      const w = toks.join(' ').slice(0, 40);
+      if (w) out.push({ text: w, weight: weight > 0 ? weight : 1, color });
+    }
+    return out;
+  }
+
+  function countWords(text, minLen, topN, useStop) {
+    const counts = new Map();
+    const add = raw => {
+      const w = /[a-z]/i.test(raw) ? raw.toLowerCase() : raw;
+      if ([...w].length < minLen) return;
+      if (/^[\d.,%]+$/.test(w)) return;
+      if (useStop && STOP.has(w)) return;
+      counts.set(w, (counts.get(w) || 0) + 1);
+    };
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      const seg = new Intl.Segmenter('zh', { granularity: 'word' });
+      for (const s of seg.segment(text)) if (s.isWordLike) add(s.segment.trim());
+    } else {
+      text.split(/[^\p{L}\p{N}]+/u).forEach(t => t && add(t));
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topN)
+      .map(([text, weight]) => ({ text, weight, color: null }));
+  }
+
+  function parseAngles(str) {
+    return String(str || '').split(/[\s,，、;；]+/).filter(Boolean).map(Number).filter(Number.isFinite).map(normDeg);
+  }
+
+  /* ======================= 形状遮罩 ======================= */
+  const imgCache = new Map();
+  function loadImage(src) {
+    if (!src) return Promise.resolve(null);
+    if (!imgCache.has(src)) {
+      imgCache.set(src, new Promise(res => {
+        const im = new Image();
+        im.onload = () => res(im);
+        im.onerror = () => res(null);
+        im.src = src;
+      }));
+    }
+    return imgCache.get(src);
+  }
+
+  // 返回 GW×GH 的格子数组，1 = 允许放字
+  async function buildMask(S, W, H, GW, GH, g) {
+    const mask = new Uint8Array(GW * GH);
+    const cellOk = (x, y) => (x + 1) * g <= W && (y + 1) * g <= H;
+
+    if (S.shape === 'text' || S.shape === 'image') {
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const x = c.getContext('2d', { willReadFrequently: true });
+      let mode = 'alpha';
+      if (S.shape === 'text') {
+        const txt = (S.shapeText || '').trim() || '爱';
+        x.font = `900 200px ${S.fontFamily}`;
+        const m = x.measureText(txt);
+        const tw = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+        const th = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+        if (tw > 0 && th > 0) {
+          const sc = Math.min(W * 0.94 / tw, H * 0.94 / th);
+          x.font = `900 ${200 * sc}px ${S.fontFamily}`;
+          x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+          x.fillText(txt, (W - tw * sc) / 2 + m.actualBoundingBoxLeft * sc, (H - th * sc) / 2 + m.actualBoundingBoxAscent * sc);
+        }
+      } else {
+        const img = await loadImage(S.maskImage);
+        if (!img) return buildMask({ ...S, shape: 'circle' }, W, H, GW, GH, g);
+        const sc = Math.min(W * 0.96 / img.naturalWidth, H * 0.96 / img.naturalHeight);
+        const dw = img.naturalWidth * sc, dh = img.naturalHeight * sc;
+        x.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        mode = S.maskMode;
+      }
+      const d = x.getImageData(0, 0, W, H).data;
+      for (let gy = 0; gy < GH; gy++) {
+        for (let gx = 0; gx < GW; gx++) {
+          if (!cellOk(gx, gy)) continue;
+          const px = Math.min(W - 1, Math.floor((gx + 0.5) * g)), py = Math.min(H - 1, Math.floor((gy + 0.5) * g));
+          const i = (py * W + px) * 4, a = d[i + 3];
+          let on;
+          if (mode === 'alpha') on = a >= 128;
+          else if (a < 128) on = false;
+          else {
+            const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+            on = mode === 'dark' ? lum < S.maskThreshold : lum >= S.maskThreshold;
+          }
+          if (on) mask[gy * GW + gx] = 1;
+        }
+      }
+      return mask;
+    }
+
+    const sh = SHAPES[S.shape] || SHAPES.circle;
+    const A = (sh.A === 'fill' || S.stretch) ? W / H : sh.A;
+    const margin = 0.97;
+    let bw = W * margin, bh = bw / A;
+    if (bh > H * margin) { bh = H * margin; bw = bh * A; }
+    for (let gy = 0; gy < GH; gy++) {
+      const v = ((gy + 0.5) * g - H / 2) / (bh / 2);
+      if (v < -1 || v > 1) continue;
+      for (let gx = 0; gx < GW; gx++) {
+        const u = ((gx + 0.5) * g - W / 2) / (bw / 2);
+        if (u < -1 || u > 1 || !cellOk(gx, gy)) continue;
+        if (sh.f(u, v)) mask[gy * GW + gx] = 1;
+      }
+    }
+    return mask;
+  }
+
+  /* ======================= 排布算法 ======================= */
+  const spriteCanvas = document.createElement('canvas');
+  const sctx = spriteCanvas.getContext('2d', { willReadFrequently: true });
+  const SPRITE_MAX = 8192;   // 超过这个尺寸的词肯定放不进画布，不再渲染，避免申请超大画布出错
+
+  // 把一个词渲染到离屏画布，取出它占用的格子（相对中心点的偏移）
+  function makeSprite(text, size, rot, family, S, g) {
+    const font = `${S.fontWeight} ${size}px ${family}`;
+    sctx.font = font;
+    const tw = Math.max(1, sctx.measureText(text).width);
+    const th = size * 1.4;
+    const pad = S.padding;
+    const c = Math.abs(Math.cos(rot)), s = Math.abs(Math.sin(rot));
+    const bw = (tw + size * 0.3) * c + th * s + pad * 2 + 4;
+    const bh = (tw + size * 0.3) * s + th * c + pad * 2 + 4;
+    let cols = Math.ceil(bw / g); cols += cols % 2;
+    let rows = Math.ceil(bh / g); rows += rows % 2;
+    const cw = cols * g, ch = rows * g;
+    if (cw > SPRITE_MAX || ch > SPRITE_MAX) return { cells: new Int16Array(0), minx: 0, maxx: 0, miny: 0, maxy: 0, tw, font };
+    spriteCanvas.width = cw; spriteCanvas.height = ch;
+    sctx.font = font;
+    sctx.textAlign = 'center'; sctx.textBaseline = 'middle';
+    sctx.fillStyle = sctx.strokeStyle = '#000';
+    sctx.lineJoin = 'round';
+    sctx.translate(cw / 2, ch / 2);
+    sctx.rotate(rot);
+    sctx.fillText(text, 0, 0);
+    if (pad > 0) { sctx.lineWidth = pad * 2; sctx.strokeText(text, 0, 0); }
+    const data = sctx.getImageData(0, 0, cw, ch).data;
+    const cells = [];
+    let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+    for (let r = 0; r < rows; r++) {
+      for (let q = 0; q < cols; q++) {
+        let hit = false;
+        for (let yy = r * g; yy < (r + 1) * g && !hit; yy++) {
+          let i = (yy * cw + q * g) * 4 + 3;
+          for (let xx = 0; xx < g; xx++, i += 4) if (data[i]) { hit = true; break; }
+        }
+        if (hit) {
+          const dx = q - cols / 2, dy = r - rows / 2;
+          cells.push(dx, dy);
+          if (dx < minx) minx = dx; if (dx > maxx) maxx = dx;
+          if (dy < miny) miny = dy; if (dy > maxy) maxy = dy;
+        }
+      }
+    }
+    return { cells: Int16Array.from(cells), minx, maxx, miny, maxy, tw, font };
+  }
+
+  const spriteKey = (text, size, rot, fam) => text + '|' + size.toFixed(1) + '|' + rot.toFixed(3) + '|' + fam;
+
+  // 候选位置只保留空格子，已被占的中心点直接跳过
+  function findSpot(sp, grid, GW, GH, cand, n) {
+    const { cells, minx, maxx, miny, maxy } = sp, m = cells.length;
+    for (let k = 0; k < n; k++) {
+      const c = cand[k];
+      if (grid[c]) continue;
+      const px = c % GW, py = (c - px) / GW;
+      if (px + minx < 0 || px + maxx >= GW || py + miny < 0 || py + maxy >= GH) continue;
+      let ok = true;
+      for (let j = 0; j < m; j += 2) {
+        if (grid[(py + cells[j + 1]) * GW + px + cells[j]]) { ok = false; break; }
+      }
+      if (ok) return c;
+    }
+    return -1;
+  }
+
+  function pickRot(S, rand, angles) {
+    const r = rand();
+    switch (S.rotateMode) {
+      case 'hv': return r < S.rotateRatio ? -Math.PI / 2 : 0;
+      case 'four': {
+        if (r >= S.rotateRatio) return 0;
+        const opts = [-90, -45, 45];
+        return opts[Math.floor(rand() * opts.length)] * DEG;
+      }
+      case 'random': return r < S.rotateRatio ? (S.rotMin + rand() * (S.rotMax - S.rotMin)) * DEG : 0;
+      case 'custom': return angles.length ? angles[Math.floor(r * angles.length)] * DEG : 0;
+      default: return 0;
+    }
+  }
+
+  const CAND_SHIFT = 4194304;   // 2^22，格子编号的上限（4000/2 × 4000/2）
+
+  async function doLayout(token) {
+    const t0 = performance.now();
+    const S = { ...state.settings };
+    const W = clamp(Math.round(S.width) || 1000, 200, 4000);
+    const H = clamp(Math.round(S.height) || 680, 200, 4000);
+    const g = S.precision;
+    const GW = Math.ceil(W / g), GH = Math.ceil(H / g);
+
+    const words = state.words
+      .filter(w => w.text.trim() && w.weight > 0)
+      .map(w => ({ ...w, text: w.text.trim() }))
+      .sort((a, b) => b.weight - a.weight);
+
+    // 等用到的字体就绪，否则测量会落到后备字体上
+    const fams = new Set([S.fontFamily, ...words.map(w => w.font).filter(Boolean)]);
+    await Promise.all([...fams].map(f => document.fonts.load(`${S.fontWeight} 40px ${f}`, '永Ag').catch(() => null)));
+    if (token !== runToken) return;
+
+    const mask = await buildMask(S, W, H, GW, GH, g);
+    if (token !== runToken) return;
+
+    const grid = new Uint8Array(GW * GH);
+    let cnt = 0, sx = 0, sy = 0, x0 = GW, x1 = 0, y0 = GH, y1 = 0;
+    for (let y = 0; y < GH; y++) {
+      for (let x = 0; x < GW; x++) {
+        const i = y * GW + x;
+        if (!mask[i]) { grid[i] = 1; continue; }
+        cnt++; sx += x; sy += y;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+
+    const rand = mulberry32(S.seed);
+    const angles = parseAngles(S.rotAngles);
+    const sprites = new Map();
+    const placed = [];
+    const missed = new Set();
+    const tById = new Map();
+    let repeats = 0;
+
+    if (words.length) {
+      const fn = { linear: v => v, sqrt: Math.sqrt, log: v => Math.log1p(v) }[S.scale] || Math.sqrt;
+      const fmin = fn(words[words.length - 1].weight), fmax = fn(words[0].weight);
+      for (const w of words) tById.set(w.id, fmax > fmin ? (fn(w.weight) - fmin) / (fmax - fmin) : 0.5);
+      const minSize = floorSize(S);
+      const sprite = (text, size, rot, fam) => {
+        const kk = spriteKey(text, size, rot, fam);
+        let sp = sprites.get(kk);
+        if (!sp) { sp = makeSprite(text, size, rot, fam, S, g); sprites.set(kk, sp); }
+        return sp;
+      };
+      const mark = (sp, px, py) => {
+        for (let j = 0; j < sp.cells.length; j += 2) {
+          const x = px + sp.cells[j], y = py + sp.cells[j + 1];
+          if (x >= 0 && x < GW && y >= 0 && y < GH) grid[y * GW + x] = 1;
+        }
+      };
+      const record = (w, size, rot, fam, sp, x, y, repeat) => placed.push({
+        id: w.id, text: w.text, weight: w.weight, t: tById.get(w.id),
+        size, rot, x, y, tw: sp.tw, family: fam, font: sp.font, repeat, pinned: !repeat && !!w.pin,
+      });
+
+      // 1. 拖动固定过的词先放到原位，其余词会避开它们
+      for (const w of words) {
+        if (!w.pin) continue;
+        const fam = w.font || S.fontFamily;
+        const rot = w.angle != null ? w.angle * DEG : w.pin.rot;
+        const size = w.size ?? w.pin.size ?? autoSize(tById.get(w.id), S);
+        const sp = sprite(w.text, size, rot, fam);
+        const x = w.pin.x * W, y = w.pin.y * H;
+        mark(sp, Math.round(x / g), Math.round(y / g));
+        record(w, size, rot, fam, sp, x, y, false);
+      }
+
+      if (cnt) {
+        // 候选位置：从形状重心向外，按椭圆距离排序（带一点随机扰动，排布更自然）。
+        // 距离和格子编号打包成一个数，用类型数组的原生排序，比带比较函数的排序快很多
+        const cx = sx / cnt, cy = sy / cnt;
+        const ax = Math.max(1, (x1 - x0) / 2), ay = Math.max(1, (y1 - y0) / 2);
+        const packed = new Float64Array(cnt);
+        let k = 0;
+        for (let i = 0; i < mask.length; i++) {
+          if (!mask[i]) continue;
+          const x = i % GW, y = (i - x) / GW;
+          const key = Math.hypot((x - cx) / ax, (y - cy) / ay) + rand() * 0.035;
+          packed[k++] = Math.floor(key * 1e6) * CAND_SHIFT + i;
+        }
+        packed.sort();
+        const cand = new Int32Array(cnt);
+        for (let i = 0; i < cnt; i++) cand[i] = packed[i] % CAND_SHIFT;
+        let candN = cnt, dirty = 0;
+        // 定期把已被占用的候选位置清掉，后面的查找只扫描空格子
+        const compact = () => {
+          let j = 0;
+          for (let i = 0; i < candN; i++) { const c = cand[i]; if (!grid[c]) cand[j++] = c; }
+          candN = j;
+          dirty = 0;
+        };
+        if (placed.length) compact();
+
+        let lastYield = performance.now();
+        const maybeYield = async () => {
+          if (performance.now() - lastYield < 30) return true;
+          const bt = document.getElementById('busyText');
+          if (bt) bt.textContent = `正在排布… 已放置 ${placed.length} 个`;
+          await yieldTask();
+          lastYield = performance.now();
+          return token === runToken;
+        };
+        const tryPlace = (w, size, rot, fam, repeat) => {
+          const sp = sprite(w.text, size, rot, fam);
+          if (!sp.cells.length) return false;
+          const c = findSpot(sp, grid, GW, GH, cand, candN);
+          if (c < 0) return false;
+          const px = c % GW, py = (c - px) / GW;
+          mark(sp, px, py);
+          record(w, size, rot, fam, sp, px * g, py * g, repeat);
+          dirty += sp.cells.length;
+          if (dirty > candN >> 4) compact();
+          return true;
+        };
+
+        // 2. 其余词按权重从大到小找位置
+        for (const w of words) {
+          if (w.pin) continue;
+          const auto = pickRot(S, rand, angles);
+          const rot = w.angle != null ? w.angle * DEG : auto;
+          const fam = w.font || S.fontFamily;
+          let size = w.size ?? autoSize(tById.get(w.id), S);
+          const canShrink = S.shrink && w.size == null;
+          let ok = false;
+          for (;;) {
+            if (tryPlace(w, size, rot, fam, false)) { ok = true; break; }
+            if (!canShrink || size * 0.85 < minSize) break;
+            size *= 0.85;
+          }
+          if (!ok) missed.add(w.id);
+          if (!(await maybeYield())) return;
+        }
+
+        // 3. 用较小字号循环使用词语，逐级缩小，直到填不进去
+        if (S.repeat) {
+          let size = Math.max(minSize, autoSize(0.22, S));
+          let fails = 0;
+          const failLimit = clamp(words.length, 8, 24);
+          while (size >= minSize && repeats < 3000 && candN) {
+            const w = words[Math.floor(rand() * words.length)];
+            const auto = pickRot(S, rand, angles);
+            const rot = w.angle != null ? w.angle * DEG : auto;
+            const s = Math.round(Math.max(minSize, size * (0.85 + rand() * 0.3)) * 2) / 2;
+            if (tryPlace(w, s, rot, w.font || S.fontFamily, true)) { repeats++; fails = 0; }
+            else if (++fails >= failLimit) { size *= 0.85; fails = 0; }
+            if (!(await maybeYield())) return;
+          }
+        }
+      } else {
+        for (const w of words) if (!w.pin) missed.add(w.id);
+      }
+    }
+
+    if (token !== runToken) return;
+    layout = {
+      id: ++layoutSeq, W, H, g, GW, GH, mask, placed, missed, tById, repeats, sprites,
+      total: words.length, empty: !cnt, family: S.fontFamily, weight: S.fontWeight, edited: false,
+      ms: performance.now() - t0,
+    };
+    // 旧排布的位置快照用不上了，释放内存
+    for (const s of undoStack) s.geo = null;
+    for (const s of redoStack) s.geo = null;
+    outlineCache = null;
+    hoverP = null;
+    if (sel) sel = wordById(sel.id) ? { id: sel.id, p: mainOf(sel.id) } : null;
+    hideTip();
+    fitCanvas();
+    paintDisplay();
+    syncRows();
+    renderInspector();
+    updateSelUi();
+  }
+
+  async function runLayout() {
+    if (drag) { layoutPending = true; return; }
+    flushKeyCommit();
+    const token = ++runToken;
+    layoutBusy = true;
+    hoverP = null;
+    hideTip();
+    canvas.style.cursor = '';
+    canvas.classList.add('busy');
+    statusEl.innerHTML = '<span class="busy-dot"></span><span id="busyText">正在排布…</span>';
+    try {
+      await doLayout(token);
+    } catch (err) {
+      if (token === runToken) {
+        console.error(err);
+        layoutBusy = false;
+        statusEl.textContent = `排布出错：${err?.message || err}。可以调小字号或画布尺寸后重试`;
+        canvas.classList.remove('busy');
+        return;
+      }
+    }
+    if (token === runToken) {
+      layoutBusy = false;
+      canvas.classList.remove('busy');
+      updateStatus();
+    }
+  }
+
+  let layoutTimer = 0;
+  function scheduleLayout(delay = 160) {
+    clearTimeout(layoutTimer);
+    layoutTimer = setTimeout(runLayout, delay);
+  }
+
+  /* ======================= 绘制 ======================= */
+  const canvas = $('#cloud');
+  const stage = $('#stage');
+  const statusEl = $('#status');
+  const ROT_OFF = 24;      // 旋转手柄到文字框的距离（屏幕像素）
+  let outlineCache = null;
+  let viewScale = 1;       // 画布显示尺寸 / 实际尺寸
+  // 静态层缓存：悬停和拖动时只重画选框和被拖的词，其余词直接贴缓存
+  const layerCv = document.createElement('canvas');
+  let layerOf = null;
+  let sceneVer = 0;
+
+  function outlineCanvas(L) {
+    const S = state.settings;
+    const dark = !S.transparent && isDark(S.bg);
+    if (outlineCache && outlineCache.L === L && outlineCache.dark === dark) return outlineCache.c;
+    const c = document.createElement('canvas');
+    c.width = L.GW; c.height = L.GH;
+    const x = c.getContext('2d');
+    const img = x.createImageData(L.GW, L.GH);
+    const [r, g, b, a] = dark ? [255, 255, 255, 20] : [40, 40, 30, 16];
+    for (let i = 0; i < L.mask.length; i++) {
+      if (!L.mask[i]) continue;
+      img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = a;
+    }
+    x.putImageData(img, 0, 0);
+    outlineCache = { L, dark, c };
+    return c;
+  }
+
+  const boxOf = p => ({ hw: p.tw / 2 + 4, hh: p.size * 0.62 });
+
+  function drawBox(ctx, p, ds, selected) {
+    const S = state.settings;
+    const accent = !S.transparent && isDark(S.bg) ? '#6da7ec' : '#2a78d6';
+    const { hw, hh } = boxOf(p);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = (selected ? 1.5 : 1) / ds;
+    ctx.setLineDash(selected ? [] : [4 / ds, 3 / ds]);
+    ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+    if (selected) {
+      const off = ROT_OFF / ds, r = 5.5 / ds, k = 9 / ds;
+      ctx.beginPath(); ctx.moveTo(0, -hh); ctx.lineTo(0, -hh - off + r); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, -hh - off, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillRect(hw - k / 2, hh - k / 2, k, k);
+      ctx.strokeRect(hw - k / 2, hh - k / 2, k, k);
+    }
+    ctx.restore();
+  }
+
+  function drawWord(ctx, p, w) {
+    ctx.fillStyle = colorFor(w || p, p.t);
+    ctx.font = p.font;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillText(p.text, 0, 0);
+    ctx.restore();
+  }
+
+  // 背景 + 形状底纹 + 所有词（预览和导出共用）
+  function drawScene(ctx, sx, sy, preview, excl) {
+    const L = layout, S = state.settings;
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    ctx.clearRect(0, 0, L.W, L.H);
+    if (!S.transparent) { ctx.fillStyle = S.bg; ctx.fillRect(0, 0, L.W, L.H); }
+    if (preview && S.showOutline) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(outlineCanvas(L), 0, 0, L.GW * L.g, L.GH * L.g);
+    }
+    const byId = new Map(state.words.map(w => [w.id, w]));
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const p of L.placed) if (p !== excl) drawWord(ctx, p, byId.get(p.id));
+  }
+
+  function compose() {
+    const L = layout;
+    if (!L) return;
+    canvas.classList.toggle('checker', state.settings.transparent);
+    const W = canvas.width, H = canvas.height, sx = W / L.W, sy = H / L.H;
+    const excl = (drag && drag.moved ? drag.p : null) || keyCommit?.p || null;
+    if (!layerOf || layerOf.ver !== sceneVer || layerOf.excl !== excl || layerOf.L !== L || layerCv.width !== W || layerCv.height !== H) {
+      if (layerCv.width !== W) layerCv.width = W;
+      if (layerCv.height !== H) layerCv.height = H;
+      drawScene(layerCv.getContext('2d'), sx, sy, true, excl);
+      layerOf = { ver: sceneVer, excl, L };
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(layerCv, 0, 0);
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
+    if (excl && L.placed.includes(excl)) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawWord(ctx, excl, wordById(excl.id));
+    }
+    if (hoverP && hoverP !== sel?.p && L.placed.includes(hoverP)) drawBox(ctx, hoverP, viewScale, false);
+    if (sel?.p && L.placed.includes(sel.p)) drawBox(ctx, sel.p, viewScale, true);
+  }
+
+  // 数据变了：重建静态层再合成
+  function paintDisplay() {
+    sceneVer++;
+    compose();
+  }
+
+  let paintQueued = false;
+  function requestPaint() {
+    if (paintQueued) return;
+    paintQueued = true;
+    requestAnimationFrame(() => { paintQueued = false; compose(); });
+  }
+
+  // 预览画布的像素尺寸跟随显示尺寸，而不是导出尺寸，大画布也不会占用几百 MB 内存
+  function fitCanvas() {
+    if (!layout) return;
+    const r = stage.getBoundingClientRect();
+    const sc = Math.min(1, (r.width - 48) / layout.W, (r.height - 48) / layout.H);
+    const cw = Math.max(60, layout.W * sc), ch = Math.max(40, layout.H * sc);
+    canvas.style.width = cw + 'px';
+    canvas.style.height = ch + 'px';
+    viewScale = cw / layout.W;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const bw = Math.max(1, Math.round(cw * dpr)), bh = Math.max(1, Math.round(ch * dpr));
+    if (canvas.width !== bw) canvas.width = bw;
+    if (canvas.height !== bh) canvas.height = bh;
+  }
+
+  function updateStatus() {
+    const L = layout;
+    if (!L || layoutBusy) return;
+    if (!L.total) { statusEl.textContent = '还没有词语，在左侧添加或批量导入吧'; return; }
+    if (L.empty && !L.placed.length) { statusEl.textContent = '形状区域为空：换一张图片、调整阈值或修改形状文字'; return; }
+    let s = `已显示 ${L.total - L.missed.size} / ${L.total} 个词`;
+    const pins = L.placed.filter(p => p.pinned).length;
+    if (pins) s += ` · 固定位置 ${pins} 个`;
+    if (L.repeats) s += ` · 重复填充 ${L.repeats} 个`;
+    if (L.missed.size) s += ` · ${L.missed.size} 个因空间不足未显示`;
+    s += ` · ${L.W}×${L.H} · ${Math.round(L.ms)} ms`;
+    statusEl.textContent = s;
+  }
+
+  function updateSelUi() {
+    canvas.classList.toggle('editing', !!sel?.p);
+    $('#hintText').textContent = sel?.p
+      ? '拖文字移动 · 拖圆点旋转（Shift 每次 15°）· 拖方块缩放 · 方向键微调 · [ ] 旋转 · Delete 删除 · Esc 取消'
+      : `点击词语编辑 · 拖动移动 · ${UNDO_KEY} 撤销`;
+  }
+
+  /* ======================= 画布交互：悬停 / 选中 / 拖动 ======================= */
+  const tip = $('#tip');
+
+  function toLayoutPt(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * layout.W / r.width, y: (e.clientY - r.top) * layout.H / r.height, ds: r.width / layout.W };
+  }
+  function toLocal(p, pt) {
+    const dx = pt.x - p.x, dy = pt.y - p.y, c = Math.cos(p.rot), s = Math.sin(p.rot);
+    return [dx * c + dy * s, -dx * s + dy * c];
+  }
+  function hitTest(pt) {
+    const L = layout;
+    if (!L) return null;
+    for (let i = L.placed.length - 1; i >= 0; i--) {
+      const p = L.placed[i];
+      const [lx, ly] = toLocal(p, pt);
+      if (Math.abs(lx) <= p.tw / 2 + 3 && Math.abs(ly) <= Math.max(p.size * 0.5, 8)) return p;
+    }
+    return null;
+  }
+  function handleAt(p, pt) {
+    const { hw, hh } = boxOf(p), ds = pt.ds;
+    const [lx, ly] = toLocal(p, pt);
+    if (Math.hypot(lx, ly + hh + ROT_OFF / ds) <= 11 / ds) return 'rotate';
+    if (Math.abs(lx - hw) <= 9 / ds && Math.abs(ly - hh) <= 9 / ds) return 'resize';
+    return null;
+  }
+  // 拖旋转手柄时，靠近 0°/45°/90° 会吸附
+  function snapDeg(d) {
+    const s = Math.round(d / 45) * 45;
+    return Math.abs(d - s) <= 4 ? s : Math.round(d);
+  }
+
+  function showTip(p, e) {
+    tip.textContent = '';
+    const v = document.createElement('div'); v.className = 'v'; v.textContent = String(p.weight);
+    const k = document.createElement('div'); k.className = 'k'; k.textContent = `「${p.text}」的权重`;
+    const parts = [`字号 ${Math.round(p.size)}px`];
+    const deg = Math.round(normDeg(p.rot / DEG));
+    if (deg) parts.push(`${deg}°`);
+    if (p.pinned) parts.push('已固定');
+    if (p.repeat) parts.push('重复填充');
+    const m = document.createElement('div'); m.className = 'm'; m.textContent = parts.join(' · ');
+    tip.append(v, k, m);
+    tip.classList.add('show');
+    const tr = tip.getBoundingClientRect();
+    let left = e.clientX + 14, top = e.clientY + 16;
+    if (left + tr.width > innerWidth - 8) left = e.clientX - tr.width - 14;
+    if (top + tr.height > innerHeight - 8) top = e.clientY - tr.height - 12;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); }
+
+  function select(p, id = p ? p.id : null) {
+    if (keyCommit && keyCommit.p !== p) flushKeyCommit();
+    sel = id == null ? null : { id, p: p || null };
+    renderInspector();
+    compose();
+    updateSelUi();
+    for (const row of wlist.querySelectorAll('.wrow')) row.classList.toggle('selected', !!sel && +row.dataset.id === sel.id);
+    if (sel) scrollRowIntoView(sel.id);
+  }
+  const selectWord = id => select(mainOf(id), id);
+
+  const restyle = p => {
+    p.font = `${layout.weight} ${p.size}px ${p.family}`;
+    sctx.font = p.font;
+    p.tw = Math.max(1, sctx.measureText(p.text).width);
+  };
+
+  let pinHinted = false, copyHinted = false;
+  // 拖动 / 旋转 / 缩放结束：主词写回词语设置，重复副本只在本次排布里生效
+  function commitInst(p, modes) {
+    const L = layout;
+    if (!L || !L.placed.includes(p)) return;
+    if (modes.includes('resize')) { p.size = Math.round(p.size); restyle(p); }
+    const i = L.placed.indexOf(p);
+    if (i !== L.placed.length - 1) { L.placed.splice(i, 1); L.placed.push(p); }
+    const w = wordById(p.id);
+    if (w && !p.repeat) {
+      if (modes.includes('rotate')) { w.angle = Math.round(normDeg(p.rot / DEG)); p.rot = w.angle * DEG; }
+      if (modes.includes('resize')) w.size = p.size;
+      if (modes.includes('move')) {
+        // 连同当前字号一起固定：被自动缩小过的词，重新排布后不会突然变大
+        w.pin = { x: p.x / L.W, y: p.y / L.H, rot: p.rot, size: p.size };
+        p.pinned = true;
+        if (!pinHinted) { pinHinted = true; toast(`已固定「${w.text.trim()}」的位置，重新排布时它不会动`); }
+      }
+      if (w.pin) { w.pin.rot = p.rot; w.pin.size = p.size; }
+      save();
+    } else if (p.repeat && !copyHinted) {
+      copyHinted = true;
+      toast('这是重复填充的副本，只在本次排布中调整');
+    }
+    L.edited = true;
+    makeRoom(p);
+    syncRows(); renderInspector(); paintDisplay(); updateStatus();
+  }
+
+  // 以原位为中心、由近到远的偏移量，按搜索半径缓存
+  const offsCache = new Map();
+  function getOffsets(R) {
+    let o = offsCache.get(R);
+    if (o) return o;
+    const side = 2 * R + 1, tmp = new Float64Array(side * side);
+    let n = 0;
+    for (let dy = -R; dy <= R; dy++) {
+      for (let dx = -R; dx <= R; dx++) {
+        const d = dx * dx + dy * dy;
+        if (d <= R * R) tmp[n++] = d * 524288 + (dy + R) * side + (dx + R);
+      }
+    }
+    const s = tmp.subarray(0, n).sort();
+    o = new Int16Array(n * 2);
+    for (let i = 0; i < n; i++) {
+      const v = s[i] % 524288;
+      o[i * 2] = v % side - R;
+      o[i * 2 + 1] = Math.floor(v / side) - R;
+    }
+    offsCache.set(R, o);
+    return o;
+  }
+
+  // 被拖动 / 旋转 / 缩放的词压住的其他词，挪到离原位最近的空位（固定位置的词不动）
+  function makeRoom(target) {
+    const L = layout, S = state.settings, { g, GW, GH } = L;
+    if (!L.placed.includes(target)) return;
+    const spriteOf = (p, size = p.size) => {
+      const k = spriteKey(p.text, size, p.rot, p.family);
+      let sp = L.sprites.get(k);
+      if (!sp) { sp = makeSprite(p.text, size, p.rot, p.family, S, g); L.sprites.set(k, sp); }
+      return sp;
+    };
+    const gpos = p => [Math.round(p.x / g), Math.round(p.y / g)];
+    const some = (sp, px, py, fn) => {
+      for (let j = 0; j < sp.cells.length; j += 2) {
+        const x = px + sp.cells[j], y = py + sp.cells[j + 1];
+        if (x >= 0 && x < GW && y >= 0 && y < GH && fn(y * GW + x)) return true;
+      }
+      return false;
+    };
+    const hot = new Uint8Array(GW * GH);
+    some(spriteOf(target), ...gpos(target), i => { hot[i] = 1; });
+    const grid = new Uint8Array(GW * GH);
+    for (let i = 0; i < grid.length; i++) grid[i] = L.mask[i] ? hot[i] : 1;
+    const displaced = [];
+    for (const p of L.placed) {
+      if (p === target) continue;
+      const sp = spriteOf(p), [px, py] = gpos(p);
+      if (!p.pinned && some(sp, px, py, i => hot[i])) displaced.push(p);
+      else some(sp, px, py, i => { grid[i] = 1; });
+    }
+    if (!displaced.length) return;
+
+    // 搜索半径封顶，大画布也不会太慢
+    const offs = getOffsets(Math.min(260, Math.ceil(Math.max(GW, GH) / 2)));
+    const fits = (sp, px, py) => {
+      if (px + sp.minx < 0 || px + sp.maxx >= GW || py + sp.miny < 0 || py + sp.maxy >= GH) return false;
+      for (let j = 0; j < sp.cells.length; j += 2) if (grid[(py + sp.cells[j + 1]) * GW + px + sp.cells[j]]) return false;
+      return true;
+    };
+    const minSize = floorSize(S);
+    displaced.sort((a, b) => b.size - a.size);
+    for (const p of displaced) {
+      const [px, py] = gpos(p);
+      const canShrink = S.shrink && !p.repeat && wordById(p.id)?.size == null;
+      let size = p.size, done = false;
+      for (;;) {
+        const sp = spriteOf(p, size);
+        if (sp.cells.length) {
+          for (let k = 0; k < offs.length; k += 2) {
+            const x = px + offs[k], y = py + offs[k + 1];
+            if (!fits(sp, x, y)) continue;
+            p.x = x * g; p.y = y * g;
+            if (size !== p.size) { p.size = size; restyle(p); }
+            some(sp, x, y, i => { grid[i] = 1; });
+            done = true;
+            break;
+          }
+        }
+        if (done || !canShrink || size * 0.85 < minSize) break;
+        size *= 0.85;
+      }
+      if (!done) {
+        // 实在放不下：从画布上拿掉，主词在列表里标「未显示」
+        L.placed.splice(L.placed.indexOf(p), 1);
+        if (p.repeat) L.repeats--;
+        else L.missed.add(p.id);
+        if (hoverP === p) hoverP = null;
+        if (sel?.p === p) sel.p = null;
+      }
+    }
+    updateSelUi();
+  }
+
+  function dragTo(pt, shift) {
+    const d = drag, p = d.p, L = layout;
+    if (!d.moved) {
+      if (d.mode === 'move' && Math.hypot(pt.x - d.pt0.x, pt.y - d.pt0.y) * pt.ds < 3) return;
+      d.moved = true;
+      pushUndo();
+      hideTip();
+    }
+    if (d.mode === 'move') {
+      p.x = clamp(d.x0 + pt.x - d.pt0.x, 0, L.W);
+      p.y = clamp(d.y0 + pt.y - d.pt0.y, 0, L.H);
+    } else if (d.mode === 'rotate') {
+      const raw = normDeg(Math.atan2(pt.y - p.y, pt.x - p.x) / DEG + 90);
+      p.rot = normDeg(shift ? Math.round(raw / 15) * 15 : snapDeg(raw)) * DEG;
+    } else {
+      const size = clamp(d.size0 * Math.hypot(pt.x - p.x, pt.y - p.y) / d.d0, 6, 400);
+      p.size = size;
+      p.tw = d.tw0 * size / d.size0;
+      p.font = `${L.weight} ${size}px ${p.family}`;
+    }
+    requestPaint();
+  }
+
+  // 键盘微调：立即显示，停手 300ms 后再提交（避让其他词、保存），连续按键只记一次撤销
+  function flushKeyCommit() {
+    if (!keyCommit) return;
+    const k = keyCommit;
+    keyCommit = null;
+    clearTimeout(k.timer);
+    commitInst(k.p, [...k.modes]);
+  }
+  function onCanvasKey(e) {
+    if (!sel || !layout || drag || layoutBusy) return;
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelection(); return; }
+    const p = sel.p;
+    if (!p) return;
+    const step = e.shiftKey ? 10 : 1;
+    let mode = 'move';
+    switch (e.key) {
+      case 'ArrowLeft': p.x = clamp(p.x - step, 0, layout.W); break;
+      case 'ArrowRight': p.x = clamp(p.x + step, 0, layout.W); break;
+      case 'ArrowUp': p.y = clamp(p.y - step, 0, layout.H); break;
+      case 'ArrowDown': p.y = clamp(p.y + step, 0, layout.H); break;
+      case '[': p.rot = normDeg(Math.round(p.rot / DEG) - 15) * DEG; mode = 'rotate'; break;
+      case ']': p.rot = normDeg(Math.round(p.rot / DEG) + 15) * DEG; mode = 'rotate'; break;
+      default: return;
+    }
+    e.preventDefault();
+    if (keyCommit && keyCommit.p !== p) flushKeyCommit();
+    if (!keyCommit) { pushUndo(); keyCommit = { p, modes: new Set() }; }
+    keyCommit.modes.add(mode);
+    clearTimeout(keyCommit.timer);
+    keyCommit.timer = setTimeout(flushKeyCommit, 300);
+    if (mode === 'rotate' && !p.repeat) inspAngle.value = Math.round(normDeg(p.rot / DEG));
+    requestPaint();
+  }
+
+  function deleteSelection() {
+    flushKeyCommit();
+    if (!sel) return;
+    const p = sel.p;
+    if (p && p.repeat) {
+      pushUndo();
+      layout.placed.splice(layout.placed.indexOf(p), 1);
+      layout.repeats--;
+      layout.edited = true;
+      select(null);
+      paintDisplay(); updateStatus();
+      toast(`已移除这个重复副本 · ${UNDO_KEY} 撤销`);
+      return;
+    }
+    deleteWord(sel.id);
+  }
+
+  // 画布被手动调整过时原地移除，保留其他词的位置；否则重新排布填补空位
+  function deleteWord(id) {
+    const w = wordById(id);
+    if (!w) return;
+    pushUndo();
+    state.words = state.words.filter(x => x !== w);
+    if (sel?.id === id) sel = null;
+    const L = layout;
+    if (L && L.edited && !layoutBusy) {
+      L.placed = L.placed.filter(q => {
+        if (q.id !== id) return true;
+        if (q.repeat) L.repeats--;
+        return false;
+      });
+      if (L.tById.has(id)) L.total--;
+      L.missed.delete(id);
+      if (hoverP?.id === id) hoverP = null;
+      renderList(); paintDisplay(); updateStatus(); renderInspector(); updateSelUi();
+    } else {
+      renderList(); renderInspector(); updateSelUi(); scheduleLayout();
+    }
+    save();
+    toast(`已删除「${w.text.trim()}」 · ${UNDO_KEY} 撤销`);
+  }
+
+  function bindCanvas() {
+    canvas.addEventListener('pointerdown', e => {
+      if (!layout || e.button !== 0 || layoutBusy) return;
+      // 先让属性面板里正在编辑的输入框提交，避免改到新选中的词上
+      if (insp.contains(document.activeElement)) document.activeElement.blur();
+      closeFontPop();
+      const pt = toLayoutPt(e);
+      let p = null, mode = 'move';
+      const h = sel?.p ? handleAt(sel.p, pt) : null;
+      if (h) { p = sel.p; mode = h; } else p = hitTest(pt);
+      if (!p) { if (sel) select(null); return; }
+      if (sel?.p !== p) select(p);
+      flushKeyCommit();
+      e.preventDefault();
+      canvas.focus({ preventScroll: true });
+      canvas.setPointerCapture(e.pointerId);
+      hideTip();
+      drag = {
+        mode, p, pt0: pt, x0: p.x, y0: p.y, size0: p.size, tw0: p.tw,
+        d0: Math.max(4, Math.hypot(pt.x - p.x, pt.y - p.y)), moved: false,
+      };
+      if (mode === 'move') canvas.style.cursor = 'grabbing';
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!layout) return;
+      const pt = toLayoutPt(e);
+      if (drag) { dragTo(pt, e.shiftKey); return; }
+      if (layoutBusy) return;
+      const h = sel?.p ? handleAt(sel.p, pt) : null;
+      const p = h ? null : hitTest(pt);
+      if (p !== hoverP) { hoverP = p; requestPaint(); }
+      canvas.style.cursor = h === 'rotate' ? 'crosshair' : h === 'resize' ? 'nwse-resize' : p ? 'grab' : 'default';
+      p ? showTip(p, e) : hideTip();
+    });
+    const end = () => {
+      if (!drag) return;
+      const d = drag;
+      drag = null;
+      canvas.style.cursor = 'grab';
+      if (d.moved && layout && layout.placed.includes(d.p)) commitInst(d.p, [d.mode]);
+      if (layoutPending) { layoutPending = false; scheduleLayout(0); }
+    };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('lostpointercapture', end);
+    canvas.addEventListener('pointerleave', () => {
+      if (drag) return;
+      hideTip();
+      if (hoverP) { hoverP = null; requestPaint(); }
+    });
+    canvas.addEventListener('keydown', onCanvasKey);
+    canvas.addEventListener('blur', flushKeyCommit);
+
+    // 拖放：图片作为形状，字体文件添加为字体；其他文件也要拦下，否则浏览器会离开页面去打开它
+    const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+    stage.addEventListener('dragover', e => {
+      if (hasFiles(e)) { e.preventDefault(); stage.classList.add('dragging'); }
+    });
+    stage.addEventListener('dragleave', e => { if (!stage.contains(e.relatedTarget)) stage.classList.remove('dragging'); });
+    stage.addEventListener('drop', e => {
+      stage.classList.remove('dragging');
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      const files = [...e.dataTransfer.files];
+      const fonts = files.filter(f => FONT_EXT[extOf(f.name)]);
+      const img = files.find(f => f.type.startsWith('image/'));
+      if (fonts.length) addFontFiles(fonts, null);
+      else if (img) useMaskFile(img);
+      else toast('只支持图片（用作形状）或字体文件（ttf / otf / woff / woff2）');
+    });
+    window.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+    window.addEventListener('drop', e => { if (hasFiles(e)) e.preventDefault(); });
+
+    new ResizeObserver(() => { fitCanvas(); compose(); }).observe(stage);
+  }
+
+  /* ======================= 选中词语的属性面板 ======================= */
+  const insp = $('#insp');
+  const inspAngle = $('#inspAngle'), inspSize = $('#inspSize'), inspColor = $('#inspColor');
+
+  function renderInspector() {
+    const w = sel && wordById(sel.id);
+    if (!w) { insp.hidden = true; return; }
+    insp.hidden = false;
+    const p = sel.p;
+    $('#inspTitle').textContent = `「${w.text.trim()}」`;
+    let note = '';
+    if (p?.repeat) note = '这是重复填充的副本：在画布上拖动只影响这一个副本，下面的设置作用于这个词本身。';
+    else if (!p) {
+      if (w.weight <= 0) note = '这个词的权重是 0，暂时隐藏。';
+      else if (layout?.missed.has(w.id)) note = '这个词因为空间不足没有显示。可以调小它的字号，或增大画布。';
+      else note = '这个词当前不在画布上。';
+    }
+    const noteEl = $('#inspNote');
+    noteEl.textContent = note;
+    noteEl.hidden = !note;
+
+    if (document.activeElement !== inspAngle) inspAngle.value = w.angle ?? '';
+    inspAngle.placeholder = p ? `自动 ${Math.round(normDeg(p.rot / DEG))}` : '自动';
+    $$('#inspAngles [data-a]').forEach(b => b.setAttribute('aria-pressed', String(w.angle != null && +b.dataset.a === w.angle)));
+    $('#inspAngleAuto').disabled = w.angle == null;
+
+    if (document.activeElement !== inspSize) inspSize.value = w.size ?? '';
+    inspSize.placeholder = p ? `自动 ${Math.round(p.size)}` : '自动';
+    $('#inspSizeAuto').disabled = w.size == null;
+
+    const fb = $('#inspFont .fb-name');
+    fb.textContent = w.font ? fontName(w.font) : `跟随全局（${fontName(state.settings.fontFamily)}）`;
+    fb.style.fontFamily = w.font || state.settings.fontFamily;
+
+    if (document.activeElement !== inspColor) inspColor.value = colorFor(w, layout?.tById.get(w.id) ?? 0.5);
+    $('#inspColorAuto').disabled = !w.color;
+
+    $('#inspPinText').textContent = w.pin ? '已固定' : '自动排布';
+    $('#inspUnpin').hidden = !w.pin;
+    $('#inspDelete').title = p?.repeat ? '移除这个副本（Delete）' : '删除这个词（Delete）';
+  }
+
+  // 角度、字号的修改直接作用于画布上的主词（以及正选中的副本），不重新排布，所见即所得
+  function geoTargets(w) {
+    const set = new Set();
+    const m = mainOf(w.id);
+    if (m) set.add(m);
+    if (sel?.p && sel.p.id === w.id) set.add(sel.p);
+    return [...set];
+  }
+  // commit=false 用于输入过程中的预览：只改显示，不挤开其他词；输入完成（change）时再提交
+  function afterWordEdit(w, changed, commit = true) {
+    save();
+    if (layoutBusy) scheduleLayout(0);            // 正在排布：用最新设置重来一次
+    else if (!mainOf(w.id)) { if (commit) scheduleLayout(0); }  // 词不在画布上：重新排布试试能不能放下
+    else if (commit && changed.length) { layout.edited = true; changed.forEach(makeRoom); }
+    paintDisplay(); syncRows(); renderInspector(); updateStatus();
+  }
+  function setWordAngle(w, deg, commit = true) {
+    w.angle = deg == null ? null : Math.round(normDeg(deg));
+    const changed = w.angle == null ? [] : geoTargets(w);
+    for (const p of changed) p.rot = w.angle * DEG;
+    if (w.pin && w.angle != null) w.pin.rot = w.angle * DEG;
+    afterWordEdit(w, changed, commit);
+  }
+  function setWordSize(w, size, commit = true) {
+    const S = state.settings;
+    w.size = size == null ? null : clamp(Math.round(size), 6, 400);
+    const changed = geoTargets(w).filter(p => w.size != null || !p.repeat);
+    for (const p of changed) {
+      p.size = w.size ?? autoSize(p.t, S);
+      restyle(p);
+    }
+    if (w.pin) w.pin.size = mainOf(w.id)?.size ?? null;
+    afterWordEdit(w, changed, commit);
+  }
+  function setWordFont(w, css) {
+    w.font = css || null;
+    const changed = layout ? layout.placed.filter(p => p.id === w.id) : [];
+    for (const p of changed) { p.family = w.font || layout.family; restyle(p); }
+    afterWordEdit(w, changed);
+  }
+
+  function bindInspector() {
+    const cur = () => (sel ? wordById(sel.id) : null);
+    $('#inspClose').addEventListener('click', () => select(null));
+    $('#inspDelete').addEventListener('click', deleteSelection);
+
+    // 数字框：输入时预览，回车 / 失焦时提交
+    const bindNumber = (el, apply) => {
+      el.addEventListener('input', () => {
+        const w = cur(), v = el.value.trim();
+        if (!w) return;
+        if (v === '' || Number.isFinite(+v)) { beginEdit(el); apply(w, v === '' ? null : +v, false); }
+      });
+      el.addEventListener('change', () => {
+        const w = cur(), v = el.value.trim();
+        if (w && (v === '' || Number.isFinite(+v))) apply(w, v === '' ? null : +v, true);
+        endEdit(el);
+      });
+      el.addEventListener('blur', () => endEdit(el));
+    };
+    bindNumber(inspAngle, setWordAngle);
+    bindNumber(inspSize, (w, v, commit) => { if (v == null || v >= 6 || commit) setWordSize(w, v, commit); });
+
+    $('#inspAngleAuto').addEventListener('click', () => { const w = cur(); if (w) { pushUndo(); inspAngle.value = ''; setWordAngle(w, null); } });
+    $('#inspAngles').addEventListener('click', e => {
+      const b = e.target.closest('[data-a]'), w = cur();
+      if (b && w) { pushUndo(); inspAngle.value = b.dataset.a; setWordAngle(w, +b.dataset.a); }
+    });
+    $('#inspSizeAuto').addEventListener('click', () => { const w = cur(); if (w) { pushUndo(); inspSize.value = ''; setWordSize(w, null); } });
+    $('#inspFont').addEventListener('click', e => {
+      const w = cur();
+      if (!w) return;
+      const id = w.id;
+      openFontPop(e.currentTarget, {
+        value: w.font, allowInherit: true,
+        onPick: css => { const ww = wordById(id); if (ww) { pushUndo(); setWordFont(ww, css); } },
+      });
+    });
+    inspColor.addEventListener('input', () => {
+      const w = cur();
+      if (!w) return;
+      beginEdit(inspColor);
+      w.color = inspColor.value;
+      $('#inspColorAuto').disabled = false;
+      save(); paintDisplay(); syncRows();
+    });
+    inspColor.addEventListener('change', () => endEdit(inspColor));
+    $('#inspColorAuto').addEventListener('click', () => {
+      const w = cur();
+      if (!w) return;
+      pushUndo();
+      w.color = null;
+      save(); paintDisplay(); syncRows(); renderInspector();
+    });
+    $('#inspUnpin').addEventListener('click', () => {
+      const w = cur();
+      if (!w) return;
+      pushUndo();
+      w.pin = null;
+      save(); syncRows(); renderInspector(); scheduleLayout(0);
+    });
+    $('#unpinBtn').addEventListener('click', () => {
+      const n = state.words.filter(w => w.pin).length;
+      if (!n) return;
+      pushUndo();
+      state.words.forEach(w => { w.pin = null; });
+      save(); syncRows(); scheduleLayout(0);
+      toast(`${n} 个词已恢复自动排布 · ${UNDO_KEY} 撤销`);
+    });
+
+    const isTextField = el => el && (el.tagName === 'TEXTAREA' || el.isContentEditable ||
+      (el.tagName === 'INPUT' && /^(text|number|search)$/.test(el.type)));
+    document.addEventListener('keydown', e => {
+      const mod = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      if (mod && !e.altKey && (k === 'z' || k === 'y')) {
+        // 输入框里交给浏览器自己的文字撤销
+        if (isTextField(document.activeElement) || $('#importDlg').open) return;
+        e.preventDefault();
+        if (k === 'y' || e.shiftKey) redo(); else undo();
+        return;
+      }
+      if (e.key !== 'Escape') return;
+      if (pop) { closeFontPop(); e.preventDefault(); return; }
+      if ($('#importDlg').open || !sel) return;
+      const a = document.activeElement;
+      if (a === canvas || a === document.body || insp.contains(a)) select(null);
+    });
+  }
+
+  /* ======================= 字体选择 ======================= */
+  const fontPop = $('#fontPop'), fontList = $('#fontList'), fontSearch = $('#fontSearch');
+  let pop = null;              // { anchor, value, allowInherit, onPick }
+  let fontUploadTarget = null; // 上传字体后应用到哪里（null = 全局字体）
+  const extOf = name => (String(name).split('.').pop() || '').toLowerCase();
+
+  function openFontPop(anchor, opts) {
+    if (pop && pop.anchor === anchor) { closeFontPop(); return; }
+    ensureFontsDetected();
+    pop = { anchor, ...opts };
+    fontSearch.value = '';
+    fontPop.hidden = false;
+    renderFontList();
+    placePop();
+    fontSearch.focus({ preventScroll: true });
+    const cur = fontList.querySelector('[aria-selected=true]');
+    if (cur) fontList.scrollTop = cur.offsetTop - fontList.clientHeight / 2;
+  }
+  function closeFontPop() {
+    if (!pop) return;
+    fontPop.hidden = true;
+    pop = null;
+  }
+  function placePop() {
+    if (!pop) return;
+    const r = pop.anchor.getBoundingClientRect(), ph = fontPop.offsetHeight, pw = fontPop.offsetWidth;
+    // 侧边栏滚动时跟着按钮走；按钮滚出可视区域就关闭
+    const pr = $('#panel').getBoundingClientRect();
+    if (!r.width || r.bottom < Math.max(0, pr.top) || r.top > Math.min(innerHeight, pr.bottom)) { closeFontPop(); return; }
+    let top = r.bottom + 6;
+    if (top + ph > innerHeight - 8) top = Math.max(8, r.top - 6 - ph);
+    fontPop.style.left = clamp(r.left, 8, innerWidth - pw - 8) + 'px';
+    fontPop.style.top = top + 'px';
+  }
+
+  let fontItemSeq = 0;
+  function fontItem(it, cur) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `fi-${++fontItemSeq}`;
+    b.className = 'font-item' + (it.available ? '' : ' missing');
+    b.setAttribute('role', 'option');
+    b.setAttribute('aria-selected', String((it.css ?? null) === cur));
+    b.dataset.css = it.css ?? '';
+    const css = it.previewCss || it.css;
+    const n = document.createElement('span'); n.className = 'fi-name'; n.textContent = it.name; n.style.fontFamily = css;
+    const s = document.createElement('span'); s.className = 'fi-sample'; s.textContent = '词云 Aa'; s.style.fontFamily = css;
+    b.append(n, s);
+    if (!it.available) {
+      const t = document.createElement('span'); t.className = 'fi-tag'; t.textContent = '未检测到';
+      b.append(t);
+    }
+    if (it.uploaded) {
+      const d = document.createElement('span');
+      d.className = 'fi-del'; d.title = '删除这个字体'; d.dataset.del = it.uploaded.family; d.innerHTML = ICON_DEL;
+      b.append(d);
+    }
+    return b;
+  }
+
+  function renderFontList() {
+    if (!pop) return;
+    const q = fontSearch.value.trim().toLowerCase();
+    const showMissing = $('#showMissing').checked;
+    const cur = pop.value ?? null;
+    const match = it => !q || it.name.toLowerCase().includes(q) || (it.families || []).some(f => f.toLowerCase().includes(q));
+    fontList.textContent = '';
+    fontSearch.removeAttribute('aria-activedescendant');
+    let shown = 0;
+    const group = (title, items) => {
+      const vis = items.filter(it => match(it) && (it.available || showMissing || it.css === cur));
+      if (!vis.length) return;
+      if (title) {
+        const h = document.createElement('div');
+        h.className = 'fl-group'; h.textContent = title;
+        fontList.append(h);
+      }
+      for (const it of vis) fontList.append(fontItem(it, cur));
+      shown += vis.length;
+    };
+    if (pop.allowInherit && !q) {
+      group('', [{ name: `跟随全局（${fontName(state.settings.fontFamily)}）`, css: null, previewCss: state.settings.fontFamily, available: true }]);
+    }
+    if (cur && !fontEntries().some(e => e.css === cur)) group('自定义', [{ name: fontName(cur), css: cur, available: true }]);
+    if (uploaded.size) group('已上传', [...uploaded.values()].map(u => ({ name: u.family, css: u.css, available: true, uploaded: u })));
+    for (const g of CATALOG) group(g.group, g.items);
+    const known = new Set(CATALOG.flatMap(g => g.items.flatMap(i => i.families || [])));
+    const extra = localFamilies.filter(f => !known.has(f) && !uploaded.has(f));
+    if (extra.length) group(`本机字体（${extra.length}）`, extra.map(f => ({ name: f, css: localCss(f), available: true, families: [f] })));
+    if (!shown) {
+      const e = document.createElement('div');
+      e.className = 'fl-empty';
+      e.textContent = q ? '没有找到。可以在下方直接输入字体名称，或上传字体文件。' : '没有可用的字体';
+      fontList.append(e);
+    }
+    $('#missingCount').textContent = fontStats.missing ? `（${fontStats.missing}）` : '';
+  }
+
+  function moveActive(d) {
+    const items = [...fontList.querySelectorAll('.font-item')];
+    if (!items.length) return;
+    const i = items.findIndex(x => x.classList.contains('active'));
+    const next = items[clamp(i < 0 ? (d > 0 ? 0 : items.length - 1) : i + d, 0, items.length - 1)];
+    items.forEach(x => x.classList.toggle('active', x === next));
+    next.scrollIntoView({ block: 'nearest' });
+    fontSearch.setAttribute('aria-activedescendant', next.id);
+  }
+
+  function pickFont(css) {
+    if (!pop) return;
+    const cb = pop.onPick;
+    closeFontPop();
+    cb(css);
+  }
+
+  async function registerFont(rec) {
+    const face = new FontFace(rec.family, rec.buf.slice(0));
+    await face.load();
+    const old = uploaded.get(rec.family);
+    if (old) document.fonts.delete(old.face);
+    document.fonts.add(face);
+    uploaded.set(rec.family, { ...rec, face, css: `${qf(rec.family)}, ${SYS_STACK}` });
+  }
+
+  async function addFontFiles(files, target) {
+    let last = null;
+    for (const f of files) {
+      const ext = extOf(f.name);
+      if (!FONT_EXT[ext]) { toast(`不支持的字体文件：${f.name}`); continue; }
+      const family = f.name.replace(/\.[^.]+$/, '').replace(/["\\<>&;{}]/g, '').trim().slice(0, 60) || '上传字体';
+      const rec = { family, name: f.name, ext, buf: await f.arrayBuffer() };
+      try { await registerFont(rec); } catch { toast(`无法读取字体：${f.name}`); continue; }
+      db.fontPut(rec).catch(() => toast('字体可以使用，但没能保存到浏览器，刷新后需要重新上传'));
+      last = uploaded.get(family);
+    }
+    if (!last) return;
+    (target || (css => setSetting('fontFamily', css)))(last.css);
+    updateFontHint();
+    toast(`已添加字体「${last.family}」`);
+  }
+
+  function removeUploadedFont(family) {
+    const u = uploaded.get(family);
+    if (!u || !confirm(`删除上传的字体「${family}」？`)) return;
+    document.fonts.delete(u.face);
+    uploaded.delete(family);
+    db.fontDel(family).catch(() => {});
+    let relayout = false;
+    if (state.settings.fontFamily === u.css) { state.settings.fontFamily = DEFAULTS.fontFamily; relayout = true; }
+    for (const w of state.words) if (w.font === u.css) { w.font = null; relayout = true; }
+    if (pop && pop.value === u.css) pop.value = null;
+    save(); syncControls(); renderFontList(); updateFontHint(); renderInspector();
+    if (relayout) scheduleLayout(0);
+  }
+
+  function updateFontHint() {
+    const parts = [];
+    if (fontsDetected) parts.push(`检测到 ${fontStats.avail} 款常用字体`);
+    if (uploaded.size) parts.push(`已上传 ${uploaded.size} 款`);
+    $('#fontHint').textContent = parts.join('，') || '正在检测本机字体…';
+  }
+
+  // 启动时从 IndexedDB 读回上传的字体和形状图片
+  async function initAssets() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LOCAL_FONTS_KEY) || '[]');
+      localFamilies = Array.isArray(saved) ? saved.filter(f => typeof f === 'string').map(f => f.slice(0, 100)) : [];
+    } catch { localFamilies = []; }
+    try {
+      for (const rec of await db.fontsAll()) {
+        try { await registerFont(rec); } catch { /* 字体文件损坏就跳过 */ }
+      }
+    } catch { /* 不支持 IndexedDB 时只是不能保存上传的内容 */ }
+    try {
+      if (state.settings.maskImage) {
+        storedMask = undefined;   // 旧版本把图片存在 localStorage 里：下次保存时迁移到 IndexedDB
+      } else {
+        const m = await db.get('mask');
+        if (typeof m === 'string' && m.startsWith('data:image/')) state.settings.maskImage = m;
+        storedMask = state.settings.maskImage;
+      }
+    } catch {
+      storedMask = state.settings.maskImage;
+    }
+    assetsReady = true;
+    if (storedMask !== state.settings.maskImage) save();
+    updateFontHint();
+    syncControls();
+  }
+
+  function bindFonts() {
+    $('#fontBtn').addEventListener('click', e => openFontPop(e.currentTarget, {
+      value: state.settings.fontFamily, allowInherit: false, onPick: css => setSetting('fontFamily', css),
+    }));
+    fontSearch.addEventListener('input', renderFontList);
+    fontSearch.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); moveActive(e.key === 'ArrowDown' ? 1 : -1); }
+      else if (e.key === 'Enter' && !e.isComposing) {
+        const a = fontList.querySelector('.font-item.active') || fontList.querySelector('.font-item');
+        if (a) pickFont(a.dataset.css || null);
+      }
+    });
+    $('#showMissing').addEventListener('change', renderFontList);
+    fontList.addEventListener('click', e => {
+      const del = e.target.closest('[data-del]');
+      if (del) { e.stopPropagation(); removeUploadedFont(del.dataset.del); return; }
+      const b = e.target.closest('.font-item');
+      if (b) pickFont(b.dataset.css || null);
+    });
+
+    const useCustom = () => {
+      const name = $('#customFont').value.replace(/["\\<>&;{}]/g, '').trim();
+      if (!name || !pop) return;
+      if (!isInstalled(name)) toast(`本机没有检测到「${name}」，会先用后备字体显示`);
+      $('#customFont').value = '';
+      const lc = name.toLowerCase();
+      const known = fontEntries().find(e => e.name.toLowerCase() === lc || (e.families || []).some(f => f.toLowerCase() === lc));
+      pickFont(known ? known.css : localCss(name));
+    };
+    $('#customFontBtn').addEventListener('click', useCustom);
+    $('#customFont').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) useCustom(); });
+
+    const fontFile = $('#fontFile');
+    $('#fontUploadBtn').addEventListener('click', () => { fontUploadTarget = pop ? pop.onPick : null; closeFontPop(); fontFile.click(); });
+    $('#fontUploadSide').addEventListener('click', () => { fontUploadTarget = null; fontFile.click(); });
+    fontFile.addEventListener('change', () => {
+      const files = [...fontFile.files];
+      fontFile.value = '';
+      if (files.length) addFontFiles(files, fontUploadTarget);
+    });
+
+    const lf = $('#localFontsBtn');
+    if (!('queryLocalFonts' in window)) lf.hidden = true;
+    lf.addEventListener('click', async () => {
+      try {
+        const list = await window.queryLocalFonts();
+        localFamilies = [...new Set(list.map(f => f.family))].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+        try { localStorage.setItem(LOCAL_FONTS_KEY, JSON.stringify(localFamilies)); } catch { /* 存不下就只在本次使用 */ }
+        renderFontList();
+        toast(localFamilies.length ? `读取到 ${localFamilies.length} 个本机字体` : '没有读取到字体（可能没有授予权限）');
+      } catch {
+        toast('没有获得读取本机字体的权限');
+      }
+    });
+
+    document.addEventListener('pointerdown', e => {
+      if (pop && !fontPop.contains(e.target) && !pop.anchor.contains(e.target)) closeFontPop();
+    }, true);
+    window.addEventListener('resize', placePop);
+    window.addEventListener('scroll', placePop);
+    $('#panel').addEventListener('scroll', placePop);
+  }
+
+  /* ======================= 词语列表 ======================= */
+  const wlist = $('#wlist');
+  const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg>';
+  const ICON_DEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+  function renderList() {
+    if (sel && !wordById(sel.id)) { sel = null; renderInspector(); }
+    wlist.textContent = '';
+    $('#wcount').textContent = state.words.length;
+    if (!state.words.length) {
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = '还没有词语。在上方输入，或点「批量导入」。';
+      wlist.append(e);
+      syncRows();
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    for (const w of state.words) {
+      const row = document.createElement('div');
+      row.className = 'wrow';
+      row.dataset.id = w.id;
+
+      const col = document.createElement('input');
+      col.type = 'color'; col.className = 'w-color'; col.title = '设置这个词的颜色'; col.setAttribute('aria-label', '颜色');
+      const txt = document.createElement('input');
+      txt.type = 'text'; txt.className = 'w-text'; txt.value = w.text; txt.maxLength = 40; txt.setAttribute('aria-label', '词语');
+      const flag = document.createElement('span');
+      flag.className = 'w-flag';
+      const wt = document.createElement('input');
+      wt.type = 'number'; wt.className = 'w-weight'; wt.value = w.weight; wt.min = '0'; wt.step = 'any'; wt.title = '权重'; wt.setAttribute('aria-label', '权重');
+      const edit = document.createElement('button');
+      edit.className = 'icon-btn w-edit'; edit.title = '单独设置角度、字号、字体'; edit.innerHTML = ICON_EDIT;
+      const del = document.createElement('button');
+      del.className = 'icon-btn del w-del'; del.title = '删除'; del.innerHTML = ICON_DEL;
+
+      row.append(col, txt, flag, wt, edit, del);
+      frag.append(row);
+    }
+    wlist.append(frag);
+    syncRows();
+  }
+
+  // 同步色块、状态标记和选中态，不重建列表以免打断输入
+  function syncRows() {
+    const byId = new Map(state.words.map(w => [w.id, w]));
+    for (const row of wlist.querySelectorAll('.wrow')) {
+      const w = byId.get(+row.dataset.id);
+      if (!w) continue;
+      const t = layout?.tById.get(w.id) ?? 0.5;
+      const col = row.querySelector('.w-color');
+      const c = colorFor(w, t);
+      if (document.activeElement !== col && col.value !== c) col.value = c;
+      const hidden = w.weight <= 0;
+      const missed = !hidden && !!layout && layout.missed.has(w.id);
+      const tags = [];
+      if (hidden) tags.push('隐藏');
+      if (missed) tags.push('未显示');
+      if (w.pin) tags.push('固定');
+      if (w.angle != null) tags.push(`${w.angle}°`);
+      const flag = row.querySelector('.w-flag');
+      flag.textContent = tags.join(' · ');
+      flag.title = missed ? '空间不足没能放下：可调小字号、开启自动缩小或增大画布' : hidden ? '权重为 0 的词不显示' : '';
+      row.classList.toggle('missed', missed || hidden);
+      row.classList.toggle('selected', !!sel && sel.id === w.id);
+    }
+    const pins = state.words.filter(w => w.pin).length;
+    const ub = $('#unpinBtn');
+    ub.hidden = !pins;
+    ub.textContent = `解除固定（${pins}）`;
+  }
+
+  function scrollRowIntoView(id) {
+    const row = wlist.querySelector(`.wrow[data-id="${id}"]`);
+    if (!row) return;
+    const top = row.offsetTop, bottom = top + row.offsetHeight;
+    if (top < wlist.scrollTop || bottom > wlist.scrollTop + wlist.clientHeight) {
+      wlist.scrollTop = top - (wlist.clientHeight - row.offsetHeight) / 2;
+    }
+  }
+
+  function wordOf(el) {
+    const row = el.closest('.wrow');
+    return row ? wordById(+row.dataset.id) : null;
+  }
+
+  function bindWords() {
+    wlist.addEventListener('input', e => {
+      const el = e.target, w = wordOf(el);
+      if (!w) return;
+      if (el.classList.contains('w-text')) {
+        if (e.isComposing) return;
+        beginEdit(el);
+        w.text = el.value;
+        if (sel?.id === w.id) renderInspector();
+        scheduleLayout(400);
+      } else if (el.classList.contains('w-weight')) {
+        beginEdit(el);
+        w.weight = Math.max(0, parseFloat(el.value) || 0);
+        scheduleLayout(400);
+      } else if (el.classList.contains('w-color')) {
+        beginEdit(el);
+        w.color = el.value;
+        paintDisplay();
+        if (sel?.id === w.id) renderInspector();
+      }
+      save();
+    });
+    wlist.addEventListener('change', e => endEdit(e.target));
+    wlist.addEventListener('focusout', e => endEdit(e.target));
+    wlist.addEventListener('compositionend', e => {
+      if (e.target.classList.contains('w-text')) e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    wlist.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const w = wordOf(btn);
+      if (!w) return;
+      if (btn.classList.contains('w-edit')) selectWord(w.id);
+      else if (btn.classList.contains('w-del')) deleteWord(w.id);
+    });
+    // 鼠标移到列表行上，画布上对应的词显示虚线框
+    wlist.addEventListener('mouseover', e => {
+      const row = e.target.closest('.wrow');
+      const p = row ? mainOf(+row.dataset.id) : null;
+      if (p !== hoverP) { hoverP = p; requestPaint(); }
+    });
+    wlist.addEventListener('mouseleave', () => { if (hoverP) { hoverP = null; requestPaint(); } });
+
+    const newWord = $('#newWord'), newWeight = $('#newWeight'), newColor = $('#newColor'), newUse = $('#newUseColor');
+    const add = () => {
+      const text = newWord.value.trim();
+      if (!text) { newWord.focus(); return; }
+      const raw = newWeight.value.trim();
+      const weight = raw === '' ? 1 : parseFloat(raw);
+      if (!Number.isFinite(weight) || weight <= 0) { toast('权重需要是大于 0 的数字'); newWeight.focus(); return; }
+      addWord(text, weight, newUse.checked ? newColor.value : null);
+      newWord.value = '';
+      newWord.focus();
+    };
+    $('#addBtn').addEventListener('click', add);
+    [newWord, newWeight].forEach(el => el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); add(); }
+    }));
+    newColor.addEventListener('input', () => { newUse.checked = true; });
+
+    $('#sortBtn').addEventListener('click', () => {
+      pushUndo();
+      state.words.sort((a, b) => b.weight - a.weight);
+      renderList(); save();
+    });
+    $('#sampleBtn').addEventListener('click', () => {
+      if (state.words.length && !confirm('用示例词语替换当前列表？')) return;
+      pushUndo();
+      state.words = parseLines(SAMPLE).map(mkWord);
+      renderList(); save(); scheduleLayout(0);
+    });
+    $('#clearBtn').addEventListener('click', () => {
+      if (!state.words.length || !confirm(`确定清空全部 ${state.words.length} 个词语？`)) return;
+      pushUndo();
+      state.words = [];
+      renderList(); save(); scheduleLayout(0);
+      toast(`已清空 · ${UNDO_KEY} 撤销`);
+    });
+  }
+
+  function addWord(text, weight, color) {
+    pushUndo();
+    const ex = state.words.find(w => w.text.trim() === text);
+    let id;
+    if (ex) {
+      ex.weight = weight;
+      if (color) ex.color = color;
+      id = ex.id;
+      toast(`已更新「${text}」的权重`);
+    } else {
+      const w = mkWord({ text, weight, color });
+      id = w.id;
+      state.words.unshift(w);
+    }
+    renderList();
+    flashRow(id);
+    save();
+    scheduleLayout(0);
+  }
+
+  function flashRow(id) {
+    const row = wlist.querySelector(`.wrow[data-id="${id}"]`);
+    if (!row) return;
+    row.classList.remove('flash');
+    void row.offsetWidth;
+    row.classList.add('flash');
+    scrollRowIntoView(id);
+  }
+
+  /* ======================= 设置面板 ======================= */
+  function setSetting(key, v) {
+    const S = state.settings;
+    if (key === 'width' || key === 'height') v = clamp(Math.round(v) || DEFAULTS[key], 200, 4000);
+    S[key] = v;
+    if (key === 'minSize' && S.maxSize < v) S.maxSize = v;
+    if (key === 'maxSize' && S.minSize > v) S.minSize = v;
+    if (key === 'rotMin' && S.rotMax < v) S.rotMax = v;
+    if (key === 'rotMax' && S.rotMin > v) S.rotMin = v;
+    syncControls();
+    save();
+    if (PAINT_KEYS.has(key)) { paintDisplay(); syncRows(); renderInspector(); }
+    else if (key !== 'exportScale' && key !== 'maskName') scheduleLayout(key === 'shapeText' || key === 'rotAngles' ? 300 : 160);
+  }
+
+  function syncControls() {
+    const S = state.settings;
+    $$('[data-set]').forEach(el => {
+      const v = S[el.dataset.set];
+      if (el.type === 'checkbox') el.checked = !!v;
+      else if (el.value !== String(v ?? '') && document.activeElement !== el) el.value = v ?? '';
+    });
+    $$('[data-seg]').forEach(seg => {
+      const v = String(S[seg.dataset.seg]);
+      seg.querySelectorAll('button[data-v]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
+    });
+    $$('[data-out]').forEach(o => {
+      const v = S[o.dataset.out];
+      o.textContent = o.dataset.fmt === 'pct' ? Math.round(v * 100) + '%' : v + (o.dataset.unit || '');
+    });
+    $$('#shapes [data-shape]').forEach(b => b.setAttribute('aria-pressed', b.dataset.shape === S.shape));
+    $$('#palettes [data-pal]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pal === S.palette));
+    $$('#bgSwatches [data-bg]').forEach(b => b.setAttribute('aria-pressed', !S.transparent && b.dataset.bg === S.bg.toLowerCase()));
+    $$('[data-when]').forEach(el => {
+      const [k, vals] = el.dataset.when.split(':');
+      el.hidden = !vals.split('|').includes(String(S[k]));
+    });
+    const sp = $('#sizePreset'), key = `${S.width}x${S.height}`;
+    sp.value = SIZE_PRESETS.some(p => p[0] === key) ? key : 'custom';
+    $('#maskName').textContent = S.maskImage ? (S.maskName || '已上传图片') : '未选择（也可以把图片拖到画布上）';
+    const fb = $('#fontBtn .fb-name');
+    fb.textContent = fontName(S.fontFamily);
+    fb.style.fontFamily = S.fontFamily;
+  }
+
+  function buildControls() {
+    // 形状按钮（图标直接用形状函数画出来，和实际遮罩一致）
+    const shapes = $('#shapes');
+    for (const [id, sh] of Object.entries(SHAPES)) {
+      const b = document.createElement('button');
+      b.className = 'shape-btn'; b.dataset.shape = id; b.title = sh.name;
+      const c = document.createElement('canvas');
+      c.width = c.height = 48;
+      drawShapeIcon(c, id);
+      const s = document.createElement('span');
+      s.textContent = sh.name;
+      b.append(c, s);
+      shapes.append(b);
+    }
+    shapes.addEventListener('click', e => {
+      const b = e.target.closest('[data-shape]');
+      if (!b) return;
+      if (b.dataset.shape === 'image' && !state.settings.maskImage) $('#maskFile').click();
+      setSetting('shape', b.dataset.shape);
+    });
+
+    // 配色方案
+    const pals = $('#palettes');
+    for (const p of PALETTES) {
+      const b = document.createElement('button');
+      b.className = 'pal-btn'; b.dataset.pal = p.id;
+      const n = document.createElement('span'); n.className = 'name'; n.textContent = p.name;
+      const strip = document.createElement('span'); strip.className = 'strip';
+      p.colors.forEach(c => { const i = document.createElement('i'); i.style.background = c; strip.append(i); });
+      b.append(n, strip);
+      pals.append(b);
+    }
+    pals.addEventListener('click', e => {
+      const b = e.target.closest('[data-pal]');
+      if (b) setSetting('palette', b.dataset.pal);
+    });
+
+    // 背景色板
+    const sw = $('#bgSwatches');
+    for (const c of BG_SWATCHES) {
+      const b = document.createElement('button');
+      b.className = 'bg-sw'; b.dataset.bg = c; b.style.background = c; b.title = c;
+      sw.append(b);
+    }
+    sw.addEventListener('click', e => {
+      const b = e.target.closest('[data-bg]');
+      if (!b) return;
+      state.settings.transparent = false;
+      setSetting('bg', b.dataset.bg);
+    });
+
+    // 尺寸预设
+    const sp = $('#sizePreset');
+    for (const [v, label] of [...SIZE_PRESETS, ['custom', '自定义']]) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = label;
+      sp.append(o);
+    }
+    sp.addEventListener('change', () => {
+      if (sp.value === 'custom') return;
+      const [w, h] = sp.value.split('x').map(Number);
+      state.settings.width = w;
+      setSetting('height', h);
+    });
+
+    // 通用绑定：data-set 输入框、data-seg 分段按钮
+    $$('[data-set]').forEach(el => {
+      const key = el.dataset.set;
+      const ev = (el.type === 'checkbox' || el.type === 'number' || el.tagName === 'SELECT') ? 'change' : 'input';
+      el.addEventListener(ev, e => {
+        if (e.isComposing) return;
+        const v = el.type === 'checkbox' ? el.checked : typeof DEFAULTS[key] === 'number' ? Number(el.value) : el.value;
+        setSetting(key, v);
+      });
+      if (el.type === 'text') el.addEventListener('compositionend', () => setSetting(key, el.value));
+    });
+    $$('[data-seg]').forEach(seg => seg.addEventListener('click', e => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      const key = seg.dataset.seg;
+      setSetting(key, typeof DEFAULTS[key] === 'number' ? Number(b.dataset.v) : b.dataset.v);
+    }));
+
+    // 图片上传
+    $('#maskBtn').addEventListener('click', () => $('#maskFile').click());
+    $('#maskFile').addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (f) useMaskFile(f);
+      e.target.value = '';
+    });
+
+    $('#recolorBtn').addEventListener('click', () => setSetting('colorSeed', state.settings.colorSeed + 1));
+    $('#resetBtn').addEventListener('click', () => {
+      if (!confirm('把所有设置恢复为默认值？（词语列表会保留）')) return;
+      state.settings = { ...DEFAULTS };
+      syncControls(); save(); scheduleLayout(0);
+    });
+
+    $('#undoBtn').title = `撤销（${UNDO_KEY}）`;
+    $('#redoBtn').title = `重做（${REDO_KEY}）`;
+    $('#undoBtn').addEventListener('click', undo);
+    $('#redoBtn').addEventListener('click', redo);
+  }
+
+  function drawShapeIcon(c, id) {
+    const x = c.getContext('2d'), n = c.width, ink = '#8a8983';
+    x.fillStyle = ink; x.strokeStyle = ink;
+    if (id === 'text') {
+      x.font = `900 ${n * 0.8}px ${SYS_STACK}`;
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText('字', n / 2, n / 2 + 2);
+      return;
+    }
+    if (id === 'image') {
+      x.lineWidth = 4; x.lineJoin = 'round';
+      x.strokeRect(5, 9, n - 10, n - 18);
+      x.beginPath(); x.moveTo(7, n - 11); x.lineTo(19, 24); x.lineTo(28, 33); x.lineTo(33, 27); x.lineTo(n - 7, n - 11); x.closePath(); x.fill();
+      x.beginPath(); x.arc(n - 15, 18, 4, 0, Math.PI * 2); x.fill();
+      return;
+    }
+    const sh = SHAPES[id], A = sh.A === 'fill' ? 1.45 : sh.A;
+    const bw = A >= 1 ? n * 0.9 : n * 0.9 * A, bh = A >= 1 ? n * 0.9 / A : n * 0.9;
+    const img = x.createImageData(n, n), [r, g, b] = hexToRgb(ink);
+    for (let py = 0; py < n; py++) {
+      for (let px = 0; px < n; px++) {
+        const u = (px + 0.5 - n / 2) / (bw / 2), v = (py + 0.5 - n / 2) / (bh / 2);
+        if (Math.abs(u) <= 1 && Math.abs(v) <= 1 && sh.f(u, v)) {
+          const i = (py * n + px) * 4;
+          img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b; img.data[i + 3] = 255;
+        }
+      }
+    }
+    x.putImageData(img, 0, 0);
+  }
+
+  // 上传的图片先缩到 1000px 以内，再存成 dataURL
+  function useMaskFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const sc = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.naturalWidth * sc));
+        c.height = Math.max(1, Math.round(im.naturalHeight * sc));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        state.settings.maskImage = c.toDataURL('image/png');
+        state.settings.maskName = file.name;
+        setSetting('shape', 'image');
+        toast('已使用图片作为形状');
+      };
+      im.onerror = () => toast('无法读取这张图片');
+      im.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ======================= 批量导入 ======================= */
+  function bindImport() {
+    const dlg = $('#importDlg');
+    let tab = 'lines';
+    const collect = () => tab === 'lines'
+      ? parseLines($('#linesInput').value)
+      : countWords($('#textInput').value, clamp(+$('#minLen').value || 1, 1, 10), clamp(+$('#topN').value || 80, 1, 500), $('#useStop').checked);
+    let pt = 0;
+    const preview = () => {
+      clearTimeout(pt);
+      pt = setTimeout(() => {
+        const n = collect().length;
+        $('#importPreview').textContent = n ? `识别到 ${n} 个词` : '';
+      }, 200);
+    };
+    $('#importBtn').addEventListener('click', () => { preview(); dlg.showModal(); });
+    $('#cancelImport').addEventListener('click', () => dlg.close());
+    $$('#importTabs [data-t]').forEach(b => b.addEventListener('click', () => {
+      tab = b.dataset.t;
+      $$('#importTabs [data-t]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      $$('[data-pane]', dlg).forEach(p => { p.hidden = p.dataset.pane !== tab; });
+      preview();
+    }));
+    ['#linesInput', '#textInput', '#minLen', '#topN', '#useStop'].forEach(s => $(s).addEventListener('input', preview));
+    // 「导入」是表单里唯一的提交按钮，在数字框里按回车也会走到这里
+    $('#doImport').addEventListener('click', e => {
+      e.preventDefault();
+      const items = collect();
+      if (!items.length) { toast('没有识别到词语'); return; }
+      pushUndo();
+      if ($('#replaceAll').checked) state.words = [];
+      for (const it of items) {
+        const ex = state.words.find(w => w.text.trim() === it.text);
+        if (ex) { ex.weight = it.weight; if (it.color) ex.color = it.color; }
+        else state.words.push(mkWord(it));
+      }
+      renderList(); save(); scheduleLayout(0);
+      dlg.close();
+      toast(`已导入 ${items.length} 个词 · ${UNDO_KEY} 撤销`);
+    });
+  }
+
+  /* ======================= 项目文件 ======================= */
+  function saveProject() {
+    flushSave();
+    const data = {
+      app: 'wordcloud-studio', version: 1,
+      words: state.words.map(({ text, weight, color, angle, size, font, pin }) => ({ text, weight, color, angle, size, font, pin })),
+      settings: state.settings,
+    };
+    download(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }), `词云项目-${stamp()}.json`);
+    const usesUpload = [...uploaded.values()].some(u => state.settings.fontFamily === u.css || state.words.some(w => w.font === u.css));
+    toast(usesUpload ? '已保存项目。注意：上传的字体不在项目文件里，需要另外保存' : '已保存项目文件');
+  }
+  async function openProject(file) {
+    let d;
+    try { d = JSON.parse(await file.text()); } catch { toast('无法读取这个文件'); return; }
+    if (!d || d.app !== 'wordcloud-studio' || !Array.isArray(d.words)) { toast('这不是词云项目文件'); return; }
+    if (state.words.length && !confirm('打开项目会替换当前的词语和全部设置，继续吗？')) return;
+    const { words, settings } = sanitize(d);
+    state.words = words;
+    state.settings = settings;
+    sel = null;
+    undoStack.length = 0;
+    redoStack.length = 0;
+    syncUndo();
+    renderList(); syncControls(); renderInspector(); updateSelUi(); save(); scheduleLayout(0);
+    toast(`已打开项目（${words.length} 个词）`);
+  }
+
+  /* ======================= 导出 ======================= */
+  function stamp() {
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+  }
+  function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  // 超过浏览器画布上限时自动降低倍率；toBlob 失败时返回 null
+  function renderPNG() {
+    const L = layout, want = state.settings.exportScale || 2;
+    let scale = want;
+    while (scale > 1 && L.W * L.H * scale * scale > MAX_EXPORT_PX) scale--;
+    const c = document.createElement('canvas');
+    c.width = L.W * scale; c.height = L.H * scale;
+    drawScene(c.getContext('2d'), scale, scale, false, null);
+    return { want, scale, blob: new Promise(res => c.toBlob(res, 'image/png')) };
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  function b64(buf) {
+    const u = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function buildSVG() {
+    const L = layout, S = state.settings;
+    const byId = new Map(state.words.map(w => [w.id, w]));
+    const out = [`<svg xmlns="http://www.w3.org/2000/svg" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}">`];
+    // 用到的上传字体直接嵌进 SVG，换台电脑打开也能正确显示；放进 CDATA，字体名里的特殊字符不会破坏 XML
+    const used = new Set(L.placed.map(p => p.family));
+    const faces = [...uploaded.values()]
+      .filter(u => [...used].some(css => css.includes(qf(u.family))))
+      .map(u => `@font-face{font-family:${qf(u.family)};src:url(data:font/${u.ext};base64,${b64(u.buf)}) format("${FONT_EXT[u.ext]}");}`);
+    if (faces.length) out.push(`<defs><style><![CDATA[${faces.join('')}]]></style></defs>`);
+    if (!S.transparent) out.push(`<rect width="100%" height="100%" fill="${esc(S.bg)}"/>`);
+    out.push(`<g font-family="${esc(L.family)}" font-weight="${esc(L.weight)}" text-anchor="middle" dominant-baseline="central">`);
+    for (const p of L.placed) {
+      const deg = (p.rot / DEG).toFixed(2);
+      const ff = p.family !== L.family ? ` font-family="${esc(p.family)}"` : '';
+      out.push(`<text transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) rotate(${deg})" font-size="${p.size.toFixed(1)}"${ff} fill="${esc(colorFor(byId.get(p.id) || p, p.t))}">${esc(p.text)}</text>`);
+    }
+    out.push('</g></svg>');
+    return out.join('\n');
+  }
+  function bindExport() {
+    const ready = () => {
+      flushKeyCommit();
+      if (!layout || !layout.placed.length) { toast('画布上还没有词语'); return false; }
+      return true;
+    };
+    $('#pngBtn').addEventListener('click', async () => {
+      if (!ready()) return;
+      const r = renderPNG();
+      const blob = await r.blob;
+      if (!blob) { toast('图片太大，导出失败。请降低导出倍率或画布尺寸'); return; }
+      download(blob, `词云-${stamp()}.png`);
+      if (r.scale < r.want) toast(`画布较大，超出浏览器上限，已按 ${r.scale}× 导出`);
+    });
+    $('#svgBtn').addEventListener('click', () => {
+      if (!ready()) return;
+      download(new Blob([buildSVG()], { type: 'image/svg+xml' }), `词云-${stamp()}.svg`);
+    });
+    $('#copyBtn').addEventListener('click', async () => {
+      if (!ready()) return;
+      try {
+        const blob = renderPNG().blob.then(b => b || Promise.reject(new Error('toBlob failed')));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        toast('已复制到剪贴板');
+      } catch {
+        toast('当前环境不支持复制图片，请使用「导出 PNG」');
+      }
+    });
+    $('#shuffleBtn').addEventListener('click', () => {
+      state.settings.seed = (Math.random() * 1e9) | 0;
+      save(); scheduleLayout(0);
+    });
+    $('#saveProjBtn').addEventListener('click', saveProject);
+    $('#openProjBtn').addEventListener('click', () => $('#projFile').click());
+    $('#projFile').addEventListener('change', e => {
+      const f = e.target.files[0];
+      e.target.value = '';
+      if (f) openProject(f);
+    });
+  }
+
+  let toastTimer = 0;
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  /* ======================= 启动 ======================= */
+  load();
+  buildControls();
+  syncControls();
+  renderList();
+  updateSelUi();
+  bindWords();
+  bindCanvas();
+  bindInspector();
+  bindFonts();
+  bindImport();
+  bindExport();
+  // 关闭或切走页面前，把还在防抖等待中的修改立刻存下来
+  window.addEventListener('pagehide', flushSave);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+  initAssets().finally(() => {
+    runLayout();
+    idle(ensureFontsDetected);
+  });
+})();
+</script>
+</body>
+</html>
