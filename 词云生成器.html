@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>词云工坊 · 把关键词变成图</title>
+<style>
+:root{--paper:#f6f5f1;--surface:#fff;--ink:#292c28;--muted:#8a8b82;--line:#e8e8df;--accent:#df6043;--accent-dark:#c44931;--accent-light:#fcf0e9;--green:#527964;--radius:16px;--shadow:0 8px 36px #343d3210}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px}button,input,select,textarea{font:inherit}button{cursor:pointer}button,select,input,textarea{outline:none}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #df604345;outline-offset:2px}button{border:0;background:none;color:inherit}button:disabled{cursor:wait;opacity:.55}svg.icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.page{max-width:1760px;margin:auto;padding:0 38px}.header{height:93px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:12px}.mark{height:39px;width:39px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:32px;font-weight:300;line-height:1}.brand-name{font-weight:750;font-size:20px;letter-spacing:1px}.brand-sub{font-size:11px;color:var(--muted);letter-spacing:1.8px;margin-top:4px}.header-right{display:flex;gap:13px;align-items:center}.local-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);padding:8px 12px;background:#ebf0e9;border-radius:30px}.dot{width:5px;height:5px;background:currentColor;border-radius:50%}.text-button{font-size:13px;padding:8px 4px;color:#6f7169}.text-button:hover{color:var(--accent)}.intro{display:flex;align-items:flex-end;justify-content:space-between;padding:28px 0 24px;gap:20px}.eyebrow{color:var(--accent);font-size:10px;letter-spacing:2px;font-weight:750;margin-bottom:8px}.intro h1{font-size:28px;letter-spacing:-.5px;margin:0 0 8px;font-weight:700}.intro p{color:#83857a;font-size:13px;margin:0}.sample-controls{display:flex;align-items:center;gap:7px;flex-shrink:0}.sample-label{font-size:12px;color:var(--muted);margin-right:6px}.chip{font-size:12px;border:1px solid #e0e1d8;border-radius:8px;background:#ffffff80;padding:9px 12px;white-space:nowrap}.chip:hover{border-color:var(--accent);color:var(--accent)}.workspace{display:grid;grid-template-columns:368px minmax(0,1fr);gap:22px;align-items:start}.panel{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);overflow:hidden}.editor{height:calc(100vh - 290px);min-height:580px;max-height:840px;display:flex;flex-direction:column}.tabs{height:61px;display:flex;border-bottom:1px solid var(--line);padding:0 20px;gap:26px;flex-shrink:0}.tab{position:relative;display:flex;align-items:center;gap:8px;color:var(--muted);padding:0 1px}.tab[aria-selected="true"]{font-weight:650;color:var(--ink)}.tab[aria-selected="true"]:after{content:"";height:3px;background:var(--accent);border-radius:2px;position:absolute;bottom:0;left:0;right:0}.count-badge{font-size:10px;font-weight:600;color:#8e9085;background:#f1f2ed;padding:3px 6px;border-radius:5px}.tab[aria-selected="true"] .count-badge{background:var(--accent-light);color:var(--accent)}.words-tab{display:flex;flex-direction:column;min-height:0;flex:1}.add-area{padding:20px 20px 15px;border-bottom:1px solid var(--line)}.label-top{font-size:11px;font-weight:600;color:#787b70;display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.label-top button{font-size:11px;font-weight:400;color:var(--accent);padding:0}.add-line{display:flex;gap:7px;align-items:center}.text-input{width:100%;height:39px;background:#fafbf8;border:1px solid #e8e9e2;border-radius:8px;padding:0 11px;color:var(--ink);min-width:0}.text-input::placeholder{color:#a1a398;font-size:12px}.text-input:hover{border-color:#cfcfc4}.add-line .text-input{flex:1}.plus-btn{height:39px;width:39px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;flex-shrink:0}.plus-btn:hover,.primary:hover{background:var(--accent-dark)}.add-options{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:#8b8e81}.small-number{width:62px;border:1px solid #e9eae3;border-radius:6px;height:29px;padding:4px 6px;background:#fff;color:#62655a;font-size:12px}.swatch{width:26px;height:26px;padding:2px;border:1px solid #e6e8dd;border-radius:50%;background:#fff;cursor:pointer;flex-shrink:0}.swatch::-webkit-color-swatch-wrapper{padding:1px}.swatch::-webkit-color-swatch{border:0;border-radius:50%}.swatch::-moz-color-swatch{border:0;border-radius:50%}.auto-note{margin-left:auto;font-size:10px;color:#a0a294}.list-toolbar{height:43px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);flex-shrink:0}.tiny-btn{padding:5px;color:#7f8177;font-size:11px;display:inline-flex;align-items:center;gap:4px}.tiny-btn:hover{color:var(--accent)}.list-head{display:grid;grid-template-columns:1fr 38px 59px 26px;gap:6px;padding:0 20px 8px;color:#a3a597;font-size:10px;letter-spacing:.5px}.word-list{flex:1;overflow:auto;min-height:100px;padding:0 12px 12px;scrollbar-width:thin;scrollbar-color:#e1e3d8 transparent}.word-row{display:grid;grid-template-columns:minmax(0,1fr) 38px 59px 26px;gap:6px;align-items:center;min-height:45px;border-bottom:1px solid #f1f2ed;padding:4px 8px;border-radius:6px;transition:background .15s}.word-row:hover{background:#fafaf7}.word-row.selected{background:var(--accent-light);border-bottom-color:transparent}.word-text{min-width:0;width:100%;border:0;background:transparent;height:30px;font-size:13px;color:#4d5047;padding:0 2px}.word-size{width:59px;height:29px;font-size:12px;font-variant-numeric:tabular-nums;border:1px solid #eaece3;background:#fff;padding:3px 5px;border-radius:6px;color:#777b6c}.delete-word{width:26px;height:28px;color:#bcc0b3;border-radius:5px;font-size:20px;line-height:1}.delete-word:hover{background:#f9e4df;color:#cc634c}.word-row .swatch{width:24px;height:24px}.editor-footer{border-top:1px solid var(--line);min-height:45px;display:flex;align-items:center;gap:7px;padding:0 20px;font-size:10px;color:#969b8d;flex-shrink:0}.settings-tab{overflow:auto;padding:22px 20px;flex:1;min-height:0;scrollbar-width:thin}.setting-group{padding-bottom:23px;margin-bottom:21px;border-bottom:1px solid var(--line)}.setting-group:last-child{border:0;margin-bottom:0}.section-label{font-size:12px;font-weight:650;margin-bottom:15px;display:flex;justify-content:space-between}.section-label span{font-size:10px;font-weight:400;color:var(--muted)}.field-label{display:block;font-size:11px;color:#8a8d80;margin-bottom:7px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field-grid input,.field-grid select{width:100%;height:36px;border:1px solid var(--line);border-radius:7px;background:#fafbf8;padding:7px 9px;color:#606456;font-size:12px}.setting-select{width:100%;height:37px;background:#fafbf8;border:1px solid var(--line);border-radius:7px;padding:6px 9px;color:#606456;font-size:12px;margin-top:6px}.check-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:14px;color:#64685b}.check-row input{accent-color:var(--accent)}.background-row{display:flex;align-items:center;justify-content:space-between;margin-top:13px;font-size:12px;color:#7b8071}.range-line{display:flex;gap:12px;align-items:center;margin-top:10px}.range-line input{width:100%;accent-color:var(--accent);height:5px}.range-line output{font-size:11px;color:#909581;width:47px;text-align:right;flex-shrink:0}.setting-note{font-size:10px;color:#a0a492;line-height:1.8;margin:10px 0 0}.palette-grid{display:flex;flex-wrap:wrap;gap:8px}.palette{display:flex;border:1px solid var(--line);border-radius:8px;padding:7px;gap:3px}.palette:hover{border-color:var(--accent)}.palette span{height:15px;width:15px;border-radius:50%}.right-side{min-width:0}.preview-panel{box-shadow:var(--shadow)}.preview-toolbar{padding:17px 22px;min-height:69px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}.preview-name{font-size:13px;font-weight:650;display:flex;align-items:center;gap:8px}.preview-name .icon{color:#8d9181}.preview-meta{color:#a1a596;font-size:10px;font-variant-numeric:tabular-nums;font-weight:400;display:block;margin-top:5px}.preview-tools{display:flex;align-items:center;gap:9px}.secondary,.primary{height:35px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;font-size:12px;white-space:nowrap}.secondary{background:#fff;border:1px solid #e4e7dc;color:#696f5c}.secondary:hover{background:#f6f8f0}.primary{background:var(--accent);color:#fff}.preview-stage{padding:24px;background:#eceee7;min-height:340px;display:flex;align-items:center;justify-content:center;position:relative}.canvas-wrap{width:100%;max-width:1080px;line-height:0;background:#fff;box-shadow:0 5px 18px #5d645316;border-radius:2px;overflow:hidden}.canvas-wrap.checker{background-color:#fff;background-image:linear-gradient(45deg,#f2f3ef 25%,transparent 25%),linear-gradient(-45deg,#f2f3ef 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f2f3ef 75%),linear-gradient(-45deg,transparent 75%,#f2f3ef 75%);background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0}#cloud{display:block;width:100%;height:auto;max-height:calc(100vh - 403px);min-height:285px}#cloud text{cursor:pointer;user-select:none}#cloud .selection{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none}#cloud text:hover{opacity:.83}.preview-status{padding:14px 22px;min-height:48px;display:flex;justify-content:space-between;gap:18px;align-items:center;font-size:11px;color:#969d87}.status-main{display:flex;gap:7px;align-items:center;line-height:1.6;color:var(--green)}.status-main.warning{color:#b57832}.status-main .icon{width:14px;height:14px}.status-right{color:#adb39e;font-size:10px;text-align:right}.tips-row{display:flex;justify-content:space-between;gap:16px;padding:18px 3px;color:#989e8b;font-size:11px;line-height:1.8}.tip{display:flex;align-items:center;gap:7px}.tip .icon{width:14px;height:14px;color:#a3aa96}.shortcut{font-size:10px;color:#a5ac98;white-space:nowrap}.bottom-note{text-align:center;margin:16px 0 24px;color:#b0b5a4;letter-spacing:.3px;font-size:10px}.bottom-note span{margin:0 8px}.empty-list{padding:45px 15px;text-align:center;color:#a1a795;font-size:12px;line-height:2}.empty-canvas{fill:#a5ac9d;font-weight:400!important;cursor:default!important}.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,16px);opacity:0;pointer-events:none;transition:.2s;z-index:60;padding:12px 20px;background:#333c30;color:#fff;font-size:12px;box-shadow:0 8px 28px #202d2025;border-radius:10px;max-width:90vw;line-height:1.6}.toast.visible{opacity:1;transform:translate(-50%,0)}dialog{padding:0;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 90px #28362130;width:min(520px,calc(100vw - 36px));color:var(--ink);background:#fff}dialog::backdrop{background:#28362155;backdrop-filter:blur(3px)}.dialog-head{padding:23px 25px 16px;display:flex;justify-content:space-between;align-items:center}.dialog-head h2{font-size:18px;margin:0}.close-dialog{font-size:24px;color:#929887;padding:0 4px}.dialog-body{padding:0 25px 20px}.dialog-body p{font-size:12px;color:#88907c;line-height:1.9;margin-top:0}.dialog-body textarea{display:block;width:100%;height:215px;resize:vertical;border:1px solid var(--line);background:#fafbf8;border-radius:9px;padding:14px;font-size:13px;line-height:1.9;color:#59604e}.dialog-actions{display:flex;justify-content:flex-end;gap:9px;padding:17px 25px;border-top:1px solid var(--line);background:#fafbf8}.format-example{font-size:11px!important;color:#a0a691!important;margin:9px 0!important}.error{font-size:12px;color:#bf5c42;margin-top:10px;line-height:1.7}.export-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.export-option{border:1px solid var(--line);border-radius:10px;padding:14px 8px;text-align:center}.export-option.active{border-color:var(--accent);background:var(--accent-light)}.export-option b{display:block;font-size:14px;font-weight:650;margin-bottom:5px}.export-option span{color:#919681;font-size:10px}.export-options+.field-label{margin-top:22px}.export-scale{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fafbf8;font-size:12px}.hidden,[hidden]{display:none!important}
+
+.shape-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.shape-option{border:1px solid var(--line);border-radius:10px;padding:13px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#858b79;font-size:11px;background:#fafbf8}.shape-option:hover{border-color:#db967f;color:var(--accent)}.shape-option[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-light);color:var(--accent);font-weight:650}.shape-symbol{height:23px;width:32px;display:flex;align-items:center;justify-content:center}.shape-symbol:before{content:"";display:block;border:1.7px solid currentColor;width:30px;height:19px;border-radius:2px}.shape-option[data-shape="square"] .shape-symbol:before{width:22px;height:22px}.shape-option[data-shape="circle"] .shape-symbol:before{width:23px;height:23px;border-radius:50%}
+
+#cloud{touch-action:none}#cloud .draggable-word,#cloud .draggable-word text{cursor:grab}#cloud .draggable-word:focus-visible{outline:none}#cloud .draggable-word:focus-visible .word-hit{stroke:#df6043;stroke-width:1.5;stroke-dasharray:4 3}#cloud.drag-active,#cloud.drag-active .draggable-word,#cloud.drag-active text{cursor:grabbing}#cloud.drag-active text:hover{opacity:1}#cloud .dragging{opacity:.85}#cloud .word-hit{pointer-events:all}#cloud .drag-origin{fill:none;stroke:#a6ad9a;stroke-width:1.3;stroke-dasharray:4 4;pointer-events:none}#cloud .drag-outline{fill:#5279640a;stroke:#527964;stroke-width:2;pointer-events:none}#cloud .drag-outline.invalid{fill:#d7544314;stroke:#d75443}
+
+.rotation-bar{margin:0;padding:12px 22px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px 15px;flex-wrap:wrap;background:#fdfefb}.rotation-selection{display:flex;align-items:center;gap:8px;min-width:160px;flex:1}.rotation-label{font-size:11px;color:#8a9180;white-space:nowrap}.rotation-selection strong{font-size:12px;font-weight:600;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rotation-selection #rotation-mode{font-size:10px;color:#a1a793;white-space:nowrap}.rotation-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.angle-input-wrap{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;background:#fff;padding-right:8px;color:#8c927e}.angle-input-wrap input{width:66px;height:32px;padding:5px 6px 5px 8px;border:0;border-radius:7px;color:#525b46;background:transparent;font-size:12px}.rotation-controls .secondary{height:32px;padding:0 10px;font-size:11px}.angle-shortcuts{display:flex;gap:3px}.angle-shortcuts button{font-size:11px;padding:6px 7px;border:1px solid #e8ebdf;border-radius:6px;background:#fff;color:#7c856e}.angle-shortcuts button:hover:not(:disabled){color:var(--accent);border-color:#dc9e89}.rotation-bar button:disabled{cursor:default}.rotation-help{flex-basis:100%;margin:0;font-size:10px;color:#a0a793;line-height:1.7}.rotation-controls input:disabled{color:#b5bcab}
+@media(max-width:760px){.rotation-bar{padding:10px 14px}.rotation-selection strong{max-width:180px}.rotation-selection{flex-basis:100%}.rotation-help{font-size:9px}.rotation-controls{gap:5px}}
+.font-sample{margin-top:10px;padding:13px 12px;background:#f6f7f1;border:1px solid #e8ebdf;border-radius:8px;font-size:21px;font-weight:800;color:#53614d;line-height:1.5;overflow-wrap:anywhere}.font-help{margin-bottom:4px}
+
+.guide-toolbar{padding:10px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px 15px;flex-wrap:wrap;background:#f8faf6;font-size:11px;color:#65725f}.guide-toolbar-label{color:#9aa18e;font-size:10px}.guide-toolbar label{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}.guide-toolbar input{accent-color:var(--accent);margin:0}.guide-export-note{color:#a3ac97;font-size:10px}.word-size-info{font-size:10px;color:#849075;font-variant-numeric:tabular-nums;margin-left:auto}#cloud .editor-guides,#cloud .editor-guides *{pointer-events:none}.guide-toolbar input:focus-visible{outline:2px solid #df604380;outline-offset:3px}
+@media(max-width:760px){.guide-toolbar{padding:10px 14px;gap:8px 12px}.word-size-info{flex-basis:100%;margin-left:0}.guide-export-note{margin-left:auto}}
+@media(min-width:1500px){.workspace{grid-template-columns:392px minmax(0,1fr)}.page{padding:0 48px}.preview-stage{padding:32px}.intro{padding:34px 0 28px}}
+@media(max-width:1120px){.page{padding:0 22px}.workspace{grid-template-columns:320px minmax(0,1fr);gap:16px}.preview-toolbar{padding:14px 16px;flex-wrap:wrap}.preview-tools{margin-left:auto}.preview-stage{padding:16px}.preview-status{padding:12px 15px}.sample-label{display:none}.intro h1{font-size:25px}.tips-row{flex-direction:column;gap:6px}.shortcut{display:none}.header{height:80px}.editor{height:calc(100vh - 270px)}.preview-name{font-size:12px}}
+@media(max-width:760px){.page{padding:0 15px}.header{height:74px}.brand-name{font-size:17px}.brand-sub{font-size:9px}.mark{width:33px;height:33px;font-size:28px}.local-pill{font-size:10px;padding:7px 9px}.header-right{gap:8px}.header-right .text-button{font-size:11px}.intro{padding:23px 0 20px;display:block}.intro h1{font-size:25px}.intro p{font-size:12px;line-height:1.8}.sample-controls{margin-top:15px}.sample-label{display:inline}.chip{padding:7px 10px}.workspace{display:flex;flex-direction:column-reverse;gap:16px}.right-side,.editor{width:100%}.editor{height:540px;min-height:540px}.preview-toolbar{gap:12px}.preview-stage{padding:12px;min-height:230px}#cloud{min-height:0;max-height:65vh}.preview-tools{gap:5px}.primary,.secondary{padding:0 9px;height:33px;font-size:11px}.preview-tools .icon{width:14px;height:14px}.preview-status{gap:8px;font-size:10px}.status-right{font-size:9px}.tips-row{padding:11px 2px 0}.bottom-note{font-size:9px}.intro .eyebrow{font-size:9px}.preview-meta{font-size:9px}.tabs{height:56px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.8-1L20 9M4 15l2.1 3A7 7 0 0 0 18 17"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+<symbol id="i-frame" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8v8H8z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4ZM20 2v4m-2-2h4"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 5 4 10l5 5M4 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/></symbol>
+<symbol id="i-mouse" viewBox="0 0 24 24"><path d="m5 3 14 10-6 1-3 6z"/></symbol>
+</defs></svg>
+<div class="page">
+  <header class="header"><div class="brand"><div class="mark" aria-hidden="true">✳</div><div><div class="brand-name">词云工坊</div><div class="brand-sub">WORD CLOUD STUDIO</div></div></div><div class="header-right"><span class="local-pill"><span class="dot"></span>离线可用</span><button class="text-button" id="import-project">导入配置</button><button class="text-button" id="save-project">保存配置</button></div></header>
+  <section class="intro"><div><div class="eyebrow">GIVE YOUR WORDS A SHAPE</div><h1>让关键词，一眼可见。</h1><p>添加词语，调节颜色与大小，生成属于你的词云。</p></div><div class="sample-controls"><span class="sample-label">从示例开始</span><button class="chip" data-preset="0">口感与加热</button><button class="chip" data-preset="1">芝士与配料</button><button class="chip" id="new-project">＋ 空白画布</button></div></section>
+  <main class="workspace">
+    <aside class="panel editor" aria-label="词云编辑器">
+      <div class="tabs" role="tablist" aria-label="编辑选项"><button class="tab" id="tab-words" role="tab" aria-selected="true" aria-controls="words-tab">词语<span class="count-badge" id="word-count">0</span></button><button class="tab" id="tab-settings" role="tab" aria-selected="false" aria-controls="settings-tab" tabindex="-1">画布与样式</button></div>
+      <section class="words-tab" id="words-tab" role="tabpanel" aria-labelledby="tab-words">
+        <form class="add-area" id="add-form"><div class="label-top"><label for="new-word">添加一个关键词</label><button type="button" id="open-bulk">批量添加 ↗</button></div><div class="add-line"><input class="text-input" id="new-word" placeholder="输入词语，按 Enter 添加" maxlength="60" autocomplete="off" required><button class="plus-btn" type="submit" title="添加词语" aria-label="添加词语"><svg class="icon"><use href="#i-plus"/></svg></button></div><div class="add-options"><label for="new-size">字号</label><input class="small-number" id="new-size" type="number" min="12" max="300" step="1" value="48" required><label for="new-color">颜色</label><input class="swatch" id="new-color" type="color" value="#df6043" title="新词颜色"><span class="auto-note">添加后自动排布</span></div></form>
+        <div class="list-toolbar"><span>每个词，都可以单独调整</span><div><button class="tiny-btn" id="undo" title="撤销上一次更改"><svg class="icon" style="width:13px;height:13px"><use href="#i-undo"/></svg>撤销</button><button class="tiny-btn" id="sort-words">按大小排序</button></div></div>
+        <div class="list-head" aria-hidden="true"><span>词语</span><span>颜色</span><span>字号 px</span><span></span></div><div class="word-list" id="word-list"></div>
+      </section>
+      <section class="settings-tab" id="settings-tab" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <div class="setting-group"><div class="section-label">词云形状<span>切换后自动排布</span></div><div class="shape-options" role="group" aria-label="词云形状"><button class="shape-option" data-shape="rectangle" aria-pressed="true"><span class="shape-symbol" aria-hidden="true"></span>长方形</button><button class="shape-option" data-shape="square" aria-pressed="false"><span class="shape-symbol" aria-hidden="true"></span>正方形</button><button class="shape-option" data-shape="circle" aria-pressed="false"><span class="shape-symbol" aria-hidden="true"></span>圆形</button></div><label class="check-row"><input id="edge-align" type="checkbox" checked>周边词语自然贴边</label><div class="background-row"><label for="edge-padding">边缘留白</label><span>px</span></div><div class="range-line"><input id="edge-padding" type="range" min="0" max="60" step="1" value="6"><output id="edge-padding-value" for="edge-padding">6 px</output></div><p class="setting-note" id="shape-note">长方形向画布四角铺开，可调节宽高比例。</p></div>
+        <div class="setting-group"><div class="section-label">画布尺寸<span>像素 px</span></div><div class="field-grid"><label><span class="field-label">宽度</span><input id="canvas-width" type="number" min="320" max="2400" step="10" value="1200"></label><label><span class="field-label">高度</span><input id="canvas-height" type="number" min="240" max="1800" step="10" value="860"></label></div><select class="setting-select" id="size-preset" aria-label="画布尺寸预设"><option value="">自定义尺寸</option><option value="1200,860">标准横版 · 1200 × 860</option><option value="1200,675">演示文稿 · 16:9</option><option value="1000,1000">正方形 · 1:1</option><option value="800,1100">竖版 · 800 × 1100</option></select></div>
+        <div class="setting-group"><div class="section-label">文字排布</div><label class="field-label" for="direction">文字方向</label><select class="setting-select" id="direction"><option value="mixed">横竖混排 · 自然穿插</option><option value="horizontal">全部横排</option></select><label class="field-label" for="font-family" style="margin-top:15px">字体</label><select class="setting-select" id="font-family"><optgroup label="中文字体"><option value="sans">系统黑体（默认）</option><option value="serif">系统宋体</option><option value="yahei">微软雅黑</option><option value="simhei">黑体</option><option value="simsun">宋体</option><option value="kaiti">楷体</option><option value="fangsong">仿宋</option><option value="pingfang">苹方</option><option value="heiti">华文黑体</option><option value="stkaiti">华文楷体</option><option value="source-han-sans">思源黑体</option><option value="source-han-serif">思源宋体</option></optgroup><optgroup label="英文字体"><option value="arial">Arial</option><option value="helvetica">Helvetica</option><option value="times">Times New Roman</option><option value="georgia">Georgia</option><option value="verdana">Verdana</option><option value="tahoma">Tahoma</option><option value="calibri">Calibri</option><option value="courier">Courier New（等宽）</option></optgroup></select><div class="font-sample" id="font-preview" aria-label="当前字体效果">词云工坊 · Aa 123</div><p class="setting-note font-help">使用本机已安装字体，缺少时自动使用替代字体。英文字体主要改变英文和数字，中文会使用中文替代字体。</p><div class="background-row"><label for="gap">词语间距</label><span>px</span></div><div class="range-line"><input id="gap" type="range" min="3" max="24" value="8"><output id="gap-value" for="gap">8 px</output></div><div class="background-row"><label for="contrast">主次对比</label><span id="contrast-label">标准</span></div><div class="range-line"><input id="contrast" type="range" min="100" max="180" step="5" value="100"><output id="contrast-value" for="contrast">1.00×</output></div><p class="setting-note">增大对比会缩小次要词，让主要词更突出。空间不足时，所有词会等比例缩小。修改词语、字号或布局设置会重新排布；仅修改颜色会保留拖拽位置。单词的固定角度优先于自动方向。</p></div>
+        <div class="setting-group"><div class="section-label">配色<span>点击应用到全部词语</span></div><div class="palette-grid" id="palettes"></div><div class="background-row"><label for="background">背景颜色</label><input class="swatch" id="background" type="color" value="#ffffff"></div><label class="check-row"><input id="transparent" type="checkbox" checked>透明背景</label><p class="setting-note">预览中的浅色棋盘格不会出现在导出的图片中。</p></div>
+      </section>
+      <div class="editor-footer"><span class="dot" style="color:#83a17b"></span><span id="save-status">修改自动保存到当前浏览器</span></div>
+    </aside>
+    <section class="right-side" aria-label="词云预览">
+      <div class="panel preview-panel"><div class="preview-toolbar"><div><div class="preview-name"><svg class="icon"><use href="#i-frame"/></svg>你的词云</div><span class="preview-meta" id="canvas-meta">1200 × 860 px · 透明背景</span></div><div class="preview-tools"><button class="secondary" id="relayout" title="恢复自动布局，清除拖拽位置，保留固定角度（可撤销）"><svg class="icon"><use href="#i-refresh"/></svg>重新排布</button><button class="primary" id="open-export"><svg class="icon"><use href="#i-download"/></svg>导出图片</button></div></div>
+      <form class="rotation-bar" id="rotation-form" aria-label="选中词语的旋转角度"><div class="rotation-selection"><span class="rotation-label">旋转词语</span><strong id="rotation-word">先点击一个词语</strong><span id="rotation-mode"></span></div><div class="rotation-controls"><label class="angle-input-wrap"><input id="word-angle" type="number" min="-180" max="180" step="0.1" placeholder="0" aria-label="旋转角度，-180 到 180 度" disabled><span>°</span></label><button class="secondary" type="submit" id="apply-angle" disabled>应用</button><div class="angle-shortcuts" role="group" aria-label="快捷旋转角度"><button type="button" data-angle="-45" disabled>−45°</button><button type="button" data-angle="0" disabled>0°</button><button type="button" data-angle="45" disabled>45°</button><button type="button" data-angle="90" disabled>90°</button></div><button type="button" class="tiny-btn" id="auto-angle" title="清除固定角度，恢复自动方向并重新排布" disabled>自动</button></div><p class="rotation-help">正数顺时针，负数逆时针。固定角度会保留；空间不足时自动调整排布。</p></form>
+      <div class="guide-toolbar" role="group" aria-label="编辑辅助边框"><span class="guide-toolbar-label">编辑辅助</span><label title="显示用于防重叠计算的占用矩形，旋转后也会包含整个词语"><input id="show-word-bounds" type="checkbox" checked>词语占用框</label><label title="显示画布边缘，以及词云形状的有效边界"><input id="show-canvas-border" type="checkbox" checked>画布边框</label><span class="guide-export-note">仅编辑时显示</span><span id="word-size-info" class="word-size-info" aria-live="polite">选中词语可查看占用尺寸</span></div>
+      <div class="preview-stage"><div class="canvas-wrap checker" id="canvas-wrap"><svg xmlns="http://www.w3.org/2000/svg" id="cloud" viewBox="0 0 1200 860" role="group" aria-label="词云预览，可拖拽调整位置"></svg></div></div>
+      <div class="preview-status"><div class="status-main" id="layout-status" role="status" aria-live="polite"><svg class="icon"><use href="#i-check"/></svg><span>正在生成词云…</span></div><span class="status-right" id="scale-status">自动排布 · 文字不重叠</span></div></div>
+      <div class="tips-row"><span class="tip"><svg class="icon"><use href="#i-mouse"/></svg>拖拽调整位置 · 点击词语设置角度 · 红框表示不可放置</span><span class="shortcut">Esc 取消 · 方向键微调 · 支持撤销</span></div>
+    </section>
+  </main>
+  <footer class="bottom-note">在浏览器中完成创作<span>·</span>无需安装，也无需联网<span>·</span>把重要的词，放大一点</footer>
+</div>
+<dialog id="bulk-dialog" aria-labelledby="bulk-title"><div class="dialog-head"><h2 id="bulk-title">批量添加词语</h2><button class="close-dialog" data-close="bulk-dialog" aria-label="关闭">×</button></div><div class="dialog-body"><p>每行一个词。也可以在同一行指定字号和颜色，以逗号或 Tab 分隔。</p><textarea id="bulk-text" aria-label="批量词语" placeholder="芝士少, 160, #FFD93D&#10;不拉丝, 120, #FF9F43&#10;馅料少, 90&#10;口感差"></textarea><p class="format-example">格式：词语, 字号, #颜色　·　未填写时使用添加栏中的默认值</p><div class="error" id="bulk-error" role="alert" hidden></div></div><div class="dialog-actions"><button class="secondary" data-close="bulk-dialog">取消</button><button class="primary" id="submit-bulk">添加到词云</button></div></dialog>
+<dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-head"><h2 id="export-title">导出你的词云</h2><button class="close-dialog" data-close="export-dialog" aria-label="关闭">×</button></div><div class="dialog-body"><p>图片使用当前画布的背景设置。透明背景适合放进 PPT 或其他设计中。</p><div class="export-options"><button class="export-option active" data-format="png"><b>PNG</b><span>高清图片</span></button><button class="export-option" data-format="svg"><b>SVG</b><span>可缩放矢量图</span></button><button class="export-option" data-format="json"><b>JSON</b><span>保存编辑配置</span></button></div><label class="field-label" for="export-scale" id="scale-label">PNG 导出清晰度</label><select class="export-scale" id="export-scale"><option value="1">1× · 原始尺寸</option><option value="2" selected>2× · 高清，推荐</option><option value="3">3× · 超清</option></select><p class="format-example" id="export-info"></p></div><div class="dialog-actions"><button class="secondary" data-close="export-dialog">取消</button><button class="primary" id="download">下载文件</button></div></dialog>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-head"><h2 id="confirm-title">替换当前词云</h2><button class="close-dialog" data-close="confirm-dialog" aria-label="关闭">×</button></div><div class="dialog-body"><p id="confirm-message">当前词语将被替换，你可以使用“撤销”恢复。</p></div><div class="dialog-actions"><button class="secondary" data-close="confirm-dialog">取消</button><button class="primary" id="confirm-action">继续</button></div></dialog>
+<input id="project-file" type="file" accept=".json,application/json" hidden><div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const PRESETS=[[{"text": "饼底硬", "size": 178, "color": "#EE5A24"}, {"text": "微波炉失败", "size": 139, "color": "#EE5A24"}, {"text": "口感差", "size": 164, "color": "#FAB1A0"}, {"text": "不酥脆", "size": 145, "color": "#FFD93D"}, {"text": "咬不动", "size": 145, "color": "#FF6B6B"}, {"text": "复热不匀", "size": 77, "color": "#FFD93D"}, {"text": "像纸板", "size": 76, "color": "#FFD93D"}, {"text": "中间没熟", "size": 71, "color": "#FFD93D"}, {"text": "发硬", "size": 70, "color": "#D63031"}, {"text": "发干", "size": 69, "color": "#FF8C42"}, {"text": "软塌", "size": 68, "color": "#FF8C42"}, {"text": "干硬", "size": 69, "color": "#FF7675"}, {"text": "加热不均匀", "size": 65, "color": "#FD79A8"}, {"text": "烤箱难控制", "size": 62, "color": "#E84393"}, {"text": "空气炸锅翻车", "size": 59, "color": "#FF7675"}, {"text": "温度难控", "size": 58, "color": "#FF6B6B"}, {"text": "边缘焦", "size": 58, "color": "#EE5A24"}, {"text": "底部焦", "size": 58, "color": "#E84393"}, {"text": "变硬", "size": 57, "color": "#FF8C42"}, {"text": "变干", "size": 57, "color": "#EE5A24"}, {"text": "上面生", "size": 55, "color": "#FF7675"}, {"text": "没发起来", "size": 50, "color": "#FF7675"}, {"text": "时间不准", "size": 50, "color": "#FF6B6B"}, {"text": "像饼干", "size": 49, "color": "#EE5A24"}, {"text": "夹生", "size": 48, "color": "#FFD93D"}, {"text": "烤焦了", "size": 47, "color": "#FF6B6B"}, {"text": "回生", "size": 44, "color": "#EE5A24"}, {"text": "皮厚", "size": 44, "color": "#D63031"}, {"text": "面发死", "size": 44, "color": "#FF6B6B"}, {"text": "饼皮硬", "size": 37, "color": "#FD79A8"}, {"text": "烤糊", "size": 37, "color": "#EE5A24"}, {"text": "难嚼", "size": 35, "color": "#E84393"}, {"text": "水分流失", "size": 31, "color": "#FF8C42"}, {"text": "火力不好掌握", "size": 30, "color": "#D63031"}, {"text": "说明不准", "size": 30, "color": "#FF8C42"}, {"text": "操作复杂", "size": 29, "color": "#E84393"}, {"text": "中心软", "size": 29, "color": "#D63031"}, {"text": "外焦里生", "size": 28, "color": "#EE5A24"}, {"text": "没有韧性", "size": 27, "color": "#FF6B6B"}, {"text": "软硬不一", "size": 27, "color": "#FF8C42"}, {"text": "边缘硬", "size": 26, "color": "#D63031"}, {"text": "不熟", "size": 27, "color": "#FF6B6B"}, {"text": "口感柴", "size": 24, "color": "#FF6B6B"}, {"text": "复热失败", "size": 25, "color": "#EE5A24"}, {"text": "不稳定", "size": 25, "color": "#D63031"}], [{"text": "芝士少", "size": 202, "color": "#FFD93D"}, {"text": "不拉丝", "size": 179, "color": "#FF9F43"}, {"text": "芝士不化", "size": 144, "color": "#FFD93D"}, {"text": "馅料少", "size": 154, "color": "#FF9F43"}, {"text": "假芝士", "size": 151, "color": "#FF9F43"}, {"text": "偷工减料", "size": 79, "color": "#F39C12"}, {"text": "料不足", "size": 78, "color": "#E67E22"}, {"text": "拉丝差", "size": 73, "color": "#EE5A24"}, {"text": "芝士劣质", "size": 69, "color": "#FF7F50"}, {"text": "再制干酪", "size": 69, "color": "#FFD93D"}, {"text": "科技味", "size": 69, "color": "#EE5A24"}, {"text": "芝士量少", "size": 68, "color": "#F39C12"}, {"text": "芝士味淡", "size": 66, "color": "#FF7F50"}, {"text": "肉少", "size": 63, "color": "#FFA502"}, {"text": "酱少", "size": 60, "color": "#FFA502"}, {"text": "芝士烤焦", "size": 57, "color": "#FFA502"}, {"text": "油脂分离", "size": 57, "color": "#EE5A24"}, {"text": "馅料偷减", "size": 57, "color": "#FF9F43"}, {"text": "不正宗", "size": 56, "color": "#FF9F43"}, {"text": "蔬菜少", "size": 56, "color": "#FECA57"}, {"text": "芝士碎", "size": 51, "color": "#FF6348"}, {"text": "性价比低", "size": 49, "color": "#FECA57"}, {"text": "芝士稀", "size": 49, "color": "#FFD93D"}, {"text": "合成芝士", "size": 43, "color": "#FFA502"}, {"text": "奶味淡", "size": 43, "color": "#FF9F43"}, {"text": "芝士太咸", "size": 41, "color": "#FF6348"}, {"text": "没有奶香味", "size": 34, "color": "#FFA502"}, {"text": "货不对板", "size": 35, "color": "#FFA502"}, {"text": "图片仅供参考", "size": 31, "color": "#FFA502"}, {"text": "配料缩水", "size": 32, "color": "#F39C12"}, {"text": "人造芝士", "size": 29, "color": "#FF6348"}, {"text": "添加剂芝士", "size": 28, "color": "#EE5A24"}, {"text": "牛肉少", "size": 28, "color": "#FF9F43"}, {"text": "培根少", "size": 27, "color": "#FFA502"}, {"text": "含量低", "size": 28, "color": "#FF9F43"}, {"text": "榴莲少", "size": 30, "color": "#FF9F43"}, {"text": "减配", "size": 28, "color": "#E67E22"}, {"text": "不敢给孩子吃", "size": 26, "color": "#FFA502"}, {"text": "皮薄馅少", "size": 25, "color": "#FECA57"}]];
+const PALETTES=[{name:'暖阳橘',colors:['#EE5A24','#FF9F43','#FFD93D','#FF7675','#E84393']},{name:'森林绿',colors:['#294936','#52796F','#84A98C','#A4AC86','#D6AD60']},{name:'海岸蓝',colors:['#184E77','#168AAD','#52B69A','#34A0A4','#76C893']},{name:'玫瑰紫',colors:['#6D597A','#B56576','#E56B6F','#EAAC8B','#9F86C0']},{name:'墨色',colors:['#222B26','#454F48','#69746B','#91998F','#B0B7AB']}];
+const FONT_OPTIONS=[{"id": "sans", "label": "系统黑体（默认）", "group": "中文字体", "family": "\"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Noto Sans CJK SC\", sans-serif"}, {"id": "serif", "label": "系统宋体", "group": "中文字体", "family": "\"Songti SC\", \"STSong\", \"SimSun\", \"Noto Serif CJK SC\", serif"}, {"id": "yahei", "label": "微软雅黑", "group": "中文字体", "family": "\"Microsoft YaHei\", \"微软雅黑\", \"PingFang SC\", \"Hiragino Sans GB\", sans-serif"}, {"id": "simhei", "label": "黑体", "group": "中文字体", "family": "\"SimHei\", \"黑体\", \"Heiti SC\", \"STHeiti\", \"PingFang SC\", sans-serif"}, {"id": "simsun", "label": "宋体", "group": "中文字体", "family": "\"SimSun\", \"宋体\", \"Songti SC\", \"STSong\", serif"}, {"id": "kaiti", "label": "楷体", "group": "中文字体", "family": "\"KaiTi\", \"楷体\", \"STKaiti\", \"Kaiti SC\", \"KaiTi_GB2312\", \"Songti SC\", serif"}, {"id": "fangsong", "label": "仿宋", "group": "中文字体", "family": "\"FangSong\", \"仿宋\", \"STFangsong\", \"FangSong_GB2312\", \"Songti SC\", serif"}, {"id": "pingfang", "label": "苹方", "group": "中文字体", "family": "\"PingFang SC\", \"苹方-简\", \"Microsoft YaHei\", \"Hiragino Sans GB\", sans-serif"}, {"id": "heiti", "label": "华文黑体", "group": "中文字体", "family": "\"STHeiti\", \"Heiti SC\", \"华文黑体\", \"SimHei\", \"PingFang SC\", sans-serif"}, {"id": "stkaiti", "label": "华文楷体", "group": "中文字体", "family": "\"STKaiti\", \"华文楷体\", \"Kaiti SC\", \"KaiTi\", \"Songti SC\", serif"}, {"id": "source-han-sans", "label": "思源黑体", "group": "中文字体", "family": "\"Source Han Sans SC\", \"思源黑体\", \"Noto Sans CJK SC\", \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif"}, {"id": "source-han-serif", "label": "思源宋体", "group": "中文字体", "family": "\"Source Han Serif SC\", \"思源宋体\", \"Noto Serif CJK SC\", \"Noto Serif SC\", \"Songti SC\", \"SimSun\", serif"}, {"id": "arial", "label": "Arial", "group": "英文字体", "family": "Arial, \"Helvetica Neue\", Helvetica, \"Microsoft YaHei\", \"PingFang SC\", sans-serif"}, {"id": "helvetica", "label": "Helvetica", "group": "英文字体", "family": "Helvetica, \"Helvetica Neue\", Arial, \"Microsoft YaHei\", \"PingFang SC\", sans-serif"}, {"id": "times", "label": "Times New Roman", "group": "英文字体", "family": "\"Times New Roman\", Times, \"Songti SC\", \"SimSun\", serif"}, {"id": "georgia", "label": "Georgia", "group": "英文字体", "family": "Georgia, \"Times New Roman\", \"Songti SC\", \"SimSun\", serif"}, {"id": "verdana", "label": "Verdana", "group": "英文字体", "family": "Verdana, Arial, \"Microsoft YaHei\", \"PingFang SC\", sans-serif"}, {"id": "tahoma", "label": "Tahoma", "group": "英文字体", "family": "Tahoma, Arial, \"Microsoft YaHei\", \"PingFang SC\", sans-serif"}, {"id": "calibri", "label": "Calibri", "group": "英文字体", "family": "Calibri, Carlito, Arial, \"Microsoft YaHei\", \"PingFang SC\", sans-serif"}, {"id": "courier", "label": "Courier New（等宽）", "group": "英文字体", "family": "\"Courier New\", Courier, \"Noto Sans Mono CJK SC\", \"PingFang SC\", \"Microsoft YaHei\", monospace"}];
+const FONTS=Object.fromEntries(FONT_OPTIONS.map(f=>[f.id,f.family]));
+const KEY='word-cloud-studio-v1';
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const clamp=(x,min,max)=>Math.max(min,Math.min(max,x));
+const validColor=x=>typeof x==='string'&&/^#[\da-f]{6}$/i.test(x);
+let serial=0;
+const uid=()=>`w${Date.now().toString(36)}${(++serial).toString(36)}`;
+const SHAPES={rectangle:'长方形',square:'正方形',circle:'圆形'};
+const freshSettings=()=>({width:1200,height:860,shape:'rectangle',direction:'mixed',font:'sans',gap:8,edgeAlign:true,edgePadding:6,contrast:100,background:'#ffffff',transparent:true,seed:31});
+let state={words:PRESETS[0].map(w=>({...w,id:uid()})),settings:freshSettings(),editorGuides:readEditorGuides()};
+let dragSession=null,layoutBusy=false;
+let selected=null,history=[],lastLayout=null,renderVersion=0,renderTimer=null,pendingConfirm=null,format='png',toastTimer=null;
+const measureCanvas=document.createElement('canvas'),ctx=measureCanvas.getContext('2d');
+function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3300)}
+function readEditorGuides(raw){return{wordBounds:typeof raw?.wordBounds==='boolean'?raw.wordBounds:true,canvasBorder:typeof raw?.canvasBorder==='boolean'?raw.canvasBorder:true}}
+function syncGuideControls(){
+ const options=readEditorGuides(state.editorGuides);$('show-word-bounds').checked=options.wordBounds;$('show-canvas-border').checked=options.canvasBorder;
+}
+function updateSizeReadout(word){
+ $('word-size-info').textContent=word?`占用 ${Math.ceil(word.w)} × ${Math.ceil(word.h)} px`:'选中词语可查看占用尺寸';
+}
+function guideShape(tag,className,attrs){
+ const element=document.createElementNS(NS,tag);element.setAttribute('class',className);element.setAttribute('fill','none');element.setAttribute('vector-effect','non-scaling-stroke');element.setAttribute('pointer-events','none');
+ for(const[name,value]of Object.entries(attrs))element.setAttribute(name,value);
+ return element;
+}
+function drawEditorGuides(layout,settings){
+ const svg=$('cloud');for(const g of svg.querySelectorAll('.editor-guides'))g.remove();
+ const options=readEditorGuides(state.editorGuides);syncGuideControls();
+ const layer=document.createElementNS(NS,'g');layer.setAttribute('class','editor-guides');layer.setAttribute('data-editor-only','true');layer.setAttribute('pointer-events','none');layer.setAttribute('aria-hidden','true');
+ if(options.canvasBorder){
+  layer.append(guideShape('rect','canvas-border',{x:1,y:1,width:settings.width-2,height:settings.height-2,stroke:'#697b8e','stroke-width':1.4}));
+  const region=shapeRegion(settings),attrs={stroke:'#4b9989','stroke-width':1,'stroke-dasharray':'5 4','stroke-opacity':.8};
+  if(region.shape==='circle')layer.append(guideShape('circle','shape-border',{cx:region.cx,cy:region.cy,r:region.r,...attrs}));
+  else if(region.x>2||region.y>2||region.w<settings.width-4||region.h<settings.height-4)layer.append(guideShape('rect','shape-border',{x:region.x,y:region.y,width:region.w,height:region.h,...attrs}));
+ }
+ if(options.wordBounds)for(const word of layout.placed){
+  const rect=guideShape('rect','word-bounds',{x:word.x,y:word.y,width:word.w,height:word.h,stroke:word.id===selected?'#df6043':'#839aaf','stroke-width':word.id===selected?1.4:.8,'stroke-opacity':word.id===selected?.95:.65});
+  rect.dataset.boundId=word.id;layer.append(rect);
+ }
+ svg.append(layer);updateSizeReadout(layout.placed.find(p=>p.id===selected));
+}
+function highlightWordBounds(id){
+ for(const rect of $('cloud').querySelectorAll('.word-bounds')){const active=rect.dataset.boundId===id;rect.setAttribute('stroke',active?'#df6043':'#839aaf');rect.setAttribute('stroke-width',active?1.4:.8);rect.setAttribute('stroke-opacity',active?.95:.65)}
+ updateSizeReadout(lastLayout?.placed.find(p=>p.id===id));
+}
+function moveWordBounds(word,valid){
+ const rect=[...$('cloud').querySelectorAll('.word-bounds')].find(r=>r.dataset.boundId===word.id);if(!rect)return;
+ rect.setAttribute('x',word.x);rect.setAttribute('y',word.y);rect.setAttribute('width',word.w);rect.setAttribute('height',word.h);rect.setAttribute('stroke',valid?'#527964':'#d75443');
+ updateSizeReadout(word);
+}
+function changeEditorGuides(){
+ state.editorGuides={wordBounds:$('show-word-bounds').checked,canvasBorder:$('show-canvas-border').checked};persist();
+ if(lastLayout)drawEditorGuides(lastLayout,state.settings);
+ if(dragSession?.moved&&dragSession.candidate)moveWordBounds(dragSession.candidate,dragSession.check.ok);
+}
+
+function normalizeAngle(value){
+ const wrapped=((value%360)+360)%360,angle=wrapped>180?wrapped-360:wrapped;
+ return Math.round(angle*1000)/1000;
+}
+function hasCustomAngle(word){return Number.isFinite(word.angle)}
+function rotatedBounds(m,rotation){
+ const radians=rotation*Math.PI/180,c0=Math.abs(Math.cos(radians)),s0=Math.abs(Math.sin(radians)),c=c0<1e-12?0:c0,s=s0<1e-12?0:s0;
+ return{w:Math.ceil(m.width*c+m.height*s-1e-9),h:Math.ceil(m.width*s+m.height*c-1e-9)};
+}
+function syncRotationControls(){
+ const word=state.words.find(w=>w.id===selected),placed=lastLayout?.placed.find(w=>w.id===selected),busy=layoutBusy||!!dragSession;
+ $('rotation-word').textContent=word?word.text:'先点击一个词语';$('rotation-word').title=word?.text||'';
+ $('word-angle').disabled=!word||busy;$('apply-angle').disabled=!word||busy;$('auto-angle').disabled=!word||busy||!hasCustomAngle(word);
+ for(const button of document.querySelectorAll('[data-angle]'))button.disabled=!word||busy;
+ if(word)$('word-angle').value=hasCustomAngle(word)?word.angle:(placed?.rotation??0);else $('word-angle').value='';
+ $('rotation-mode').textContent=word?(hasCustomAngle(word)?'已固定角度':'自动方向'):'';
+}
+function rotationCandidate(word,placed,angle,layout,settings){
+ const m=metrics(word,placed.size,FONTS[settings.font]),geo={size:placed.size,m},bounds=rotatedBounds(m,angle),base=placedWord({...word,angle},geo,angle,placed.cx-bounds.w/2,placed.cy-bounds.h/2);
+ const region=shapeRegion(settings);
+ const acceptable=item=>insideShape(item,region)&&!layout.placed.some(p=>p.id!==item.id&&overlaps(item,p,settings.gap-.01));
+ if(acceptable(base))return{placed:base,relocated:false};
+ // Keep every other word in place when a nearby empty location can hold the rotation.
+ const range=Math.min(180,Math.min(region.w,region.h)*.24);
+ for(let ring=1;ring<=Math.ceil(range/7);ring++){
+  const radius=ring*7,samples=Math.max(16,Math.ceil(2*Math.PI*radius/7));
+  for(let n=0;n<samples;n++){
+   const theta=n/samples*2*Math.PI,x=base.x+Math.cos(theta)*radius,y=base.y+Math.sin(theta)*radius,item={...base,x,y,cx:x+base.w/2,cy:y+base.h/2};
+   if(acceptable(item))return{placed:item,relocated:true};
+  }
+ }
+ return null;
+}
+function setWordAngle(id,value){
+ if(dragSession||layoutBusy||!lastLayout||lastLayout.key!==layoutSignature(state.words,state.settings)){toast('正在更新排版，请稍后设置角度。');return{ok:false,reason:'busy'}}
+ const word=state.words.find(w=>w.id===id),index=lastLayout.placed.findIndex(p=>p.id===id);
+ if(!word||index<0){toast('请先选择一个词语。');return{ok:false,reason:'missing'}}
+ const automatic=value===null;
+ if(!automatic&&(!Number.isFinite(value)||value< -180||value>180)){toast('请输入 -180° 到 180° 之间的角度。');syncRotationControls();return{ok:false,reason:'invalid'}}
+ const angle=automatic?null:normalizeAngle(value),original=lastLayout.placed[index];
+ if((automatic&&!hasCustomAngle(word))||(!automatic&&word.angle===angle)){syncRotationControls();return{ok:true,unchanged:true}}
+ const candidate=automatic?null:rotationCandidate(word,original,angle,lastLayout,state.settings);
+ state.manualLayout=manualSnapshot(lastLayout,state.words,state.settings);remember();
+ if(automatic)delete word.angle;else word.angle=angle;
+ selected=id;
+ if(candidate){
+  lastLayout.placed[index]=candidate.placed;lastLayout.manual=true;lastLayout.key=layoutSignature(state.words,state.settings);
+  state.manualLayout=manualSnapshot(lastLayout,state.words,state.settings);persist();draw(lastLayout,state.settings);updateLayoutStatus(lastLayout,state.settings);
+  toast(candidate.relocated?`已旋转至 ${angle}°，并移到附近空位。`:`已旋转至 ${angle}°。`);
+  return{ok:true,relocated:candidate.relocated};
+ }
+ state.manualLayout=null;schedule(0);
+ toast(automatic?'已恢复自动方向，正在重新排布。':`已固定为 ${angle}°，正在调整排布以留出空间。`);
+ return{ok:true,relayout:true};
+}
+
+function normalize(data){
+ if(!data||!Array.isArray(data.words)||data.words.length>150)throw new Error('配置需要包含词语列表，最多 150 个词。');
+ const usedIds=new Set();
+ const words=data.words.map((w,i)=>{if(!w||typeof w.text!=='string'||!w.text.trim()||w.text.trim().length>60)throw new Error(`第 ${i+1} 个词无效（最多 60 个字符）。`);if(!Number.isFinite(Number(w.size))||Number(w.size)<12||Number(w.size)>300)throw new Error(`第 ${i+1} 个词的字号应为 12–300。`);if(!validColor(w.color))throw new Error(`第 ${i+1} 个词的颜色需为 #RRGGBB 格式。`);let id=typeof w.id==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(w.id)&&!usedIds.has(w.id)?w.id:uid();while(usedIds.has(id))id=uid();usedIds.add(id);if(w.angle!=null&&(!Number.isFinite(w.angle)||Math.abs(w.angle)>180))throw new Error(`第 ${i+1} 个词的角度应为 -180° 到 180°。`);return{id,text:w.text.trim(),size:Math.round(Number(w.size)),color:w.color,...(w.angle!=null?{angle:normalizeAngle(w.angle)}:{})}});
+ const raw=data.settings||{},s=freshSettings();
+ for(const[k,min,max]of[['width',320,2400],['height',240,1800],['gap',3,24],['edgePadding',0,60],['contrast',100,180]])if(Number.isFinite(Number(raw[k])))s[k]=Math.round(clamp(Number(raw[k]),min,max));
+ if(Object.hasOwn(SHAPES,raw.shape))s.shape=raw.shape;
+ if(['mixed','horizontal'].includes(raw.direction))s.direction=raw.direction;if(Object.hasOwn(FONTS,raw.font))s.font=raw.font;if(validColor(raw.background))s.background=raw.background;if(typeof raw.edgeAlign==='boolean')s.edgeAlign=raw.edgeAlign;if(typeof raw.transparent==='boolean')s.transparent=raw.transparent;if(Number.isFinite(raw.seed))s.seed=raw.seed>>>0;
+ return{words,settings:s,editorGuides:readEditorGuides(data.editorGuides),manualLayout:readManualLayout(data.manualLayout,words,s)};
+}
+try{const saved=localStorage.getItem(KEY);if(saved)state=normalize(JSON.parse(saved))}catch(e){console.info('Using default word cloud:',e.message)}
+function remember(){history.push(JSON.stringify(state));if(history.length>35)history.shift();$('undo').disabled=false}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));$('save-status').textContent='修改已自动保存在当前浏览器'}catch{$('save-status').textContent='请用“保存配置”保存本次编辑'}}
+function changeTab(name){for(const n of['words','settings']){const active=n===name;$(`tab-${n}`).setAttribute('aria-selected',String(active));$(`tab-${n}`).tabIndex=active?0:-1;$(`${n}-tab`).hidden=!active}}
+function selectWord(id,scroll=false){selected=id;syncRotationControls();highlightWordBounds(id);for(const row of $('word-list').children)row.classList.toggle('selected',row.dataset.id===id);for(const r of $('cloud').querySelectorAll('.selection'))r.remove();const p=lastLayout?.placed.find(p=>p.id===id);if(p){const r=document.createElementNS(NS,'rect');r.setAttribute('class','selection');r.setAttribute('x',p.x-3);r.setAttribute('y',p.y-3);r.setAttribute('width',p.w+6);r.setAttribute('height',p.h+6);r.setAttribute('rx','3');$('cloud').appendChild(r)}if(scroll){changeTab('words');const row=[...$('word-list').children].find(r=>r.dataset.id===id);row?.scrollIntoView({block:'nearest',behavior:'smooth'});row?.querySelector('.word-text')?.focus({preventScroll:true})}}
+function renderWords(){
+ const list=$('word-list');list.replaceChildren();$('word-count').textContent=state.words.length;$('undo').disabled=history.length===0;
+ if(!state.words.length){const p=document.createElement('div');p.className='empty-list';p.textContent='还没有词语。\n从上方添加第一个关键词吧。';p.style.whiteSpace='pre-line';list.append(p);return}
+ for(const word of state.words){
+  const row=document.createElement('div');row.className='word-row'+(selected===word.id?' selected':'');row.dataset.id=word.id;
+  const text=document.createElement('input');text.className='word-text';text.value=word.text;text.maxLength=60;text.setAttribute('aria-label',`编辑词语：${word.text}`);
+  text.addEventListener('focus',()=>selectWord(word.id));text.addEventListener('change',()=>{const v=text.value.trim();if(!v){text.value=word.text;toast('词语不能为空，请点击右侧 × 删除。');return}remember();word.text=v;text.setAttribute('aria-label',`编辑词语：${v}`);schedule()});
+  const color=document.createElement('input');color.type='color';color.className='swatch';color.value=word.color;color.setAttribute('aria-label',`${word.text}的颜色`);color.title=`${word.text}的颜色`;
+  color.addEventListener('change',()=>{remember();word.color=color.value;schedule()});
+  const size=document.createElement('input');size.type='number';size.min='12';size.max='300';size.step='1';size.value=word.size;size.className='word-size';size.setAttribute('aria-label',`${word.text}的字号`);
+  size.addEventListener('focus',()=>selectWord(word.id));size.addEventListener('change',()=>{if(!size.value||!Number.isFinite(Number(size.value))){size.value=word.size;return}remember();word.size=Math.round(clamp(Number(size.value),12,300));size.value=word.size;schedule()});
+  const del=document.createElement('button');del.className='delete-word';del.textContent='×';del.title=`删除 ${word.text}`;del.setAttribute('aria-label',`删除 ${word.text}`);del.addEventListener('click',()=>{remember();state.words=state.words.filter(w=>w.id!==word.id);if(selected===word.id)selected=null;renderWords();schedule()});
+  row.append(text,color,size,del);list.append(row);
+ }
+}
+function syncFontPreview(){const option=FONT_OPTIONS.find(f=>f.id===state.settings.font)||FONT_OPTIONS[0];$('font-preview').style.fontFamily=option.family;$('font-preview').title=option.label;$('font-preview').setAttribute('aria-label',option.label+'效果预览：词云工坊，Aa 123')}
+function syncSettings(){syncGuideControls();const s=state.settings;document.querySelectorAll('[data-shape]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shape===s.shape)));$('shape-note').textContent=s.shape==='rectangle'?'周边词语贴齐轮廓；混排时两侧横竖穿插，内部自然填充。':s.shape==='square'?'周边词语贴齐正方形，混排时两侧横竖穿插。使用 1:1 画布可减少两侧留白。':'周边词语靠近圆弧，横竖自然穿插，所有文字完整保留在圆内。';$('edge-align').checked=s.edgeAlign;$('edge-padding').value=s.edgePadding;for(const[id,key]of[['canvas-width','width'],['canvas-height','height'],['direction','direction'],['font-family','font'],['gap','gap'],['contrast','contrast'],['background','background']])$(id).value=s[key];$('transparent').checked=s.transparent;$('background').disabled=s.transparent;$('size-preset').value=[...$('size-preset').options].some(o=>o.value===`${s.width},${s.height}`)?`${s.width},${s.height}`:'';syncRangeLabels();syncFontPreview()}
+function syncRangeLabels(){$('edge-padding-value').value=state.settings.edgePadding+' px';$('gap-value').value=state.settings.gap+' px';$('contrast-value').value=(state.settings.contrast/100).toFixed(2)+'×';$('contrast-label').textContent=state.settings.contrast>=145?'强对比':state.settings.contrast>100?'突出主词':'标准'}
+function rand(seed){let a=seed>>>0;return()=>{a+=0x6D2B79F5;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}}
+function metrics(word,size,font){ctx.font=`800 ${size}px ${font}`;const m=ctx.measureText(word.text),left=m.actualBoundingBoxLeft??0,right=m.actualBoundingBoxRight??m.width,asc=m.actualBoundingBoxAscent??size*.85,desc=m.actualBoundingBoxDescent??size*.15;return{width:Math.ceil(left+right)+4,height:Math.ceil(asc+desc)+4,tx:(left-right)/2,ty:(asc-desc)/2}}
+function overlaps(a,b,gap){return a.x<b.x+b.w+gap&&a.x+a.w+gap>b.x&&a.y<b.y+b.h+gap&&a.y+a.h+gap>b.y}
+function shapeRegion(s){
+ const padding=s.edgePadding??6,side=Math.min(s.width,s.height)-padding*2,shape=s.shape||'rectangle';
+ const w=shape==='rectangle'?s.width-padding*2:side,h=shape==='rectangle'?s.height-padding*2:side;
+ return{shape,x:(s.width-w)/2,y:(s.height-h)/2,w,h,cx:s.width/2,cy:s.height/2,r:side/2};
+}
+function insideShape(box,region){
+ if(box.x<region.x-.001||box.y<region.y-.001||box.x+box.w>region.x+region.w+.001||box.y+box.h>region.y+region.h+.001)return false;
+ if(region.shape==='circle'){
+  const dx=Math.max(Math.abs(box.x-region.cx),Math.abs(box.x+box.w-region.cx));
+  const dy=Math.max(Math.abs(box.y-region.cy),Math.abs(box.y+box.h-region.cy));
+  return dx*dx+dy*dy<=region.r*region.r+.001;
+ }
+ return true;
+}
+function alignSparsePerimeter(placed,region,gap){
+ if(placed.length<2)return;
+ const candidates=placed.slice().sort((a,b)=>b.size-a.size);
+ for(const p of candidates){
+  let best=null,distance=Infinity;
+  const test=(x,y)=>{const moved={...p,x,y};if(!insideShape(moved,region)||placed.some(q=>q.id!==p.id&&overlaps(moved,q,gap)))return;const d=Math.hypot(x-p.x,y-p.y);if(d<distance){distance=d;best=moved}};
+  if(region.shape==='circle'){
+   for(let n=0;n<72;n++){const angle=n*Math.PI/36,cos=Math.cos(angle),sin=Math.sin(angle),b=Math.abs(cos)*p.w/2+Math.abs(sin)*p.h/2,disc=b*b+region.r*region.r-p.w*p.w/4-p.h*p.h/4;if(disc<0)continue;const radius=Math.sqrt(disc)-b;test(region.cx+cos*radius-p.w/2,region.cy+sin*radius-p.h/2)}
+  }else{test(region.x,p.y);test(region.x+region.w-p.w,p.y);test(p.x,region.y);test(p.x,region.y+region.h-p.h)}
+  if(best){p.x=best.x;p.y=best.y;p.cx=p.x+p.w/2;p.cy=p.y+p.h/2;p.edge=region.shape==='circle'?'circle':'perimeter'}
+ }
+}
+function wordGeometry(word,s,scale,cache){
+ const size=Math.max(4,word.layoutSize*scale),key=word.id+'|'+size.toFixed(4);
+ const m=cache.get(key)||metrics(word,size,FONTS[s.font]);cache.set(key,m);
+ return{size,m};
+}
+function placedWord(word,geo,rotation,x,y){
+ const {w,h}=rotatedBounds(geo.m,rotation);
+ const {layoutSize,...original}=word;
+ return{...original,x,y,w,h,size:geo.size,rotation,tx:geo.m.tx,ty:geo.m.ty,localWidth:geo.m.width,localHeight:geo.m.height,cx:x+w/2,cy:y+h/2};
+}
+// Fit a short row of original-size words, then justify its first and last word to the ends.
+function selectEdgeRow(pool,length,rotation,s,scale,cache,maxCount){
+ const unit=2,capacity=Math.floor((length+s.gap)/unit),limit=Math.min(maxCount,pool.length,7);
+ if(capacity<1||!limit)return[];
+ const choices=pool.map(word=>{const geo=wordGeometry(word,s,scale,cache);return{word,geo,len:geo.m.width}}).filter(c=>c.len<=length);
+ const dp=Array.from({length:limit+1},()=>Array(capacity+1));dp[0][0]={previous:null,choice:null};
+ for(const choice of choices){const weight=Math.ceil((choice.len+s.gap)/unit);for(let count=limit;count>=1;count--)for(let sum=capacity;sum>=weight;sum--){if(!dp[count][sum]&&dp[count-1][sum-weight])dp[count][sum]={previous:dp[count-1][sum-weight],choice}}}
+ let best=null,bestScore=-Infinity;
+ for(let count=1;count<=limit;count++)for(let sum=1;sum<=capacity;sum++){if(!dp[count][sum])continue;const score=sum-capacity*.012*count;if(score>bestScore){best=dp[count][sum];bestScore=score}}
+ const row=[];while(best?.choice){row.push(best.choice);best=best.previous}
+ return row.reverse();
+}
+// Choose each side word's orientation independently. Prefer two or three short
+// horizontal words among vertical words, while filling the available edge length.
+function selectMixedSide(pool,length,s,scale,cache,widthLimit){
+ const unit=2,capacity=Math.floor((length+s.gap)/unit),limit=Math.min(5,pool.length);
+ if(capacity<1||limit<2)return[];
+ const choices=pool.map(word=>({word,geo:wordGeometry(word,s,scale,cache)})).map(c=>({
+  ...c,options:[0,90].map(rotation=>({rotation,len:rotation?c.geo.m.width:c.geo.m.height,depth:rotation?c.geo.m.height:c.geo.m.width})).filter(o=>o.len<=length&&o.depth<=widthLimit&&(o.rotation===0||o.len<=length*.58))
+ })).filter(c=>c.options.length);
+ const dp=Array.from({length:limit+1},()=>Array.from({length:4},()=>Array(capacity+1)));
+ dp[0][0][0]={previous:null,choice:null};
+ for(const c of choices){
+  for(let count=limit;count>=1;count--)for(let horizontal=Math.min(3,count);horizontal>=0;horizontal--){
+   for(const o of c.options){
+    const h=o.rotation===0?1:0,previousH=horizontal-h,weight=Math.ceil((o.len+s.gap)/unit);
+    if(previousH<0||previousH>count-1)continue;
+    for(let sum=capacity;sum>=weight;sum--)if(!dp[count][horizontal][sum]&&dp[count-1][previousH][sum-weight]){
+     dp[count][horizontal][sum]={previous:dp[count-1][previousH][sum-weight],choice:{word:c.word,geo:c.geo,rotation:o.rotation}};
+    }
+   }
+  }
+ }
+ let best=null,bestScore=-Infinity;
+ for(const minimumHorizontal of[2,1,0]){
+  for(let count=2;count<=limit;count++)for(let horizontal=minimumHorizontal;horizontal<=Math.min(3,count-1);horizontal++)for(let sum=1;sum<=capacity;sum++){
+   const node=dp[count][horizontal][sum];if(!node)continue;
+   const score=sum-capacity*(.009*count+.012*Math.abs(horizontal-2));
+   if(score>bestScore){best=node;bestScore=score}
+  }
+  if(best)break;
+ }
+ const row=[];while(best?.choice){row.push(best.choice);best=best.previous}
+ return row.reverse();
+}
+function mixSideOrder(row,random){
+ const horizontal=row.filter(c=>c.rotation===0),vertical=row.filter(c=>c.rotation===90),result=[];
+ for(const group of[horizontal,vertical])for(let i=group.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[group[i],group[j]]=[group[j],group[i]]}
+ let previous=null,run=0;
+ while(horizontal.length||vertical.length){
+  let rotation=(!vertical.length||horizontal.length&&random()<horizontal.length/(horizontal.length+vertical.length))?0:90;
+  if(run>=2&&rotation===previous&&(rotation===0?vertical:horizontal).length)rotation=90-rotation;
+  const group=rotation===0?horizontal:vertical;result.push(group.pop());run=rotation===previous?run+1:1;previous=rotation;
+ }
+ return result;
+}
+
+function rectangularBorder(words,s,scale,cache,region){
+ const anchors=[],reserve=Math.min(5,Math.floor(words.length/4)),pool=words.slice(reserve).filter(w=>!hasCustomAngle(w)),random=rand(s.seed+831),gap=s.gap;
+ const placeRow=(axis,side,start,length,cross)=>{
+  let row;
+  if(axis==='y'&&s.direction==='mixed'){
+   row=selectMixedSide(pool,length,s,scale,cache,Math.min(region.w*.22,region.h*.28));
+   if(!row.length)row=selectEdgeRow(pool,length,90,s,scale,cache,5).map(c=>({...c,rotation:90}));
+   row=mixSideOrder(row,random);
+  }else if(axis==='y'){
+   const available=pool.map(word=>({word,geo:wordGeometry(word,s,scale,cache),rotation:0})).filter(c=>c.geo.m.height<=length&&c.geo.m.width<=region.w*.24);
+   const target=Math.min(6,Math.max(2,Math.floor(pool.length/3)));row=available.slice(0,target);
+   while(row.length&&row.reduce((sum,c)=>sum+c.geo.m.height,0)+gap*(row.length-1)>length)row.pop();
+  }else row=selectEdgeRow(pool,length,0,s,scale,cache,Math.min(4,Math.max(2,Math.floor(pool.length*.22)))).map(c=>({...c,rotation:0}));
+  if(!row.length)return 0;
+  if(axis==='x'||s.direction==='horizontal')for(let i=row.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[row[i],row[j]]=[row[j],row[i]]}
+  const span=c=>axis==='x'?(c.rotation?c.geo.m.height:c.geo.m.width):(c.rotation?c.geo.m.width:c.geo.m.height);
+  const total=row.reduce((sum,c)=>sum+span(c),0),extra=length-total-gap*(row.length-1);
+  if(extra<-.001)return 0;
+  const weights=Array.from({length:row.length-1},()=>.65+random()*.7),weightSum=weights.reduce((a,b)=>a+b,0);
+  let cursor=row.length===1?start+(length-total)/2:start,depth=0;
+  for(let index=0;index<row.length;index++){
+   const c=row[index],rotation=c.rotation,w=rotation?c.geo.m.height:c.geo.m.width,h=rotation?c.geo.m.width:c.geo.m.height,x=axis==='x'?cursor:(side==='left'?cross:cross-w),y=axis==='y'?cursor:(side==='top'?cross:cross-h);
+   const item=placedWord(c.word,c.geo,rotation,x,y);item.edge=side;
+   if(insideShape(item,region)&&!anchors.some(p=>overlaps(item,p,gap))){anchors.push(item);pool.splice(pool.findIndex(p=>p.id===c.word.id),1);depth=Math.max(depth,axis==='x'?h:w)}
+   cursor+=span(c)+gap+(weightSum?extra*(weights[index]||0)/weightSum:0);
+  }
+  return depth;
+ };
+ const top=placeRow('x','top',region.x,region.w,region.y);
+ const bottom=placeRow('x','bottom',region.x,region.w,region.y+region.h);
+ const sideY=region.y+top+gap,sideHeight=region.h-top-bottom-2*gap;
+ if(sideHeight>0){placeRow('y','left',sideY,sideHeight,region.x);placeRow('y','right',sideY,sideHeight,region.x+region.w)}
+ return anchors;
+}
+function circularBorder(words,s,scale,cache,region){
+ const anchors=[],reserve=Math.min(5,Math.floor(words.length/4)),pool=words.slice(reserve).filter(w=>!hasCustomAngle(w)),target=Math.min(20,Math.floor(words.length*.42)),phase=(s.seed%360)*Math.PI/180,orientationRandom=rand(s.seed+1753);
+ let area=0;
+ for(const word of pool){
+  if(anchors.length>=target||area>Math.PI*region.r*region.r*.34)break;
+  const geo=wordGeometry(word,s,scale,cache),sideHorizontal=orientationRandom()<.45;let best=null,score=-Infinity;
+  for(let n=0;n<144;n++){
+   const angle=-Math.PI/2+n*Math.PI/72,cos=Math.cos(angle),sin=Math.sin(angle),preferred=s.direction==='mixed'&&Math.abs(cos)>Math.abs(sin)&&!sideHorizontal?90:0;
+   for(const rotation of s.direction==='mixed'?[preferred,90-preferred]:[0]){
+    const w=rotation?geo.m.height:geo.m.width,h=rotation?geo.m.width:geo.m.height,b=Math.abs(cos)*w/2+Math.abs(sin)*h/2,disc=b*b+region.r*region.r-w*w/4-h*h/4;
+    if(disc<=0)continue;const radius=Math.sqrt(disc)-b;if(radius<region.r*.42)continue;
+    const item=placedWord(word,geo,rotation,region.cx+cos*radius-w/2,region.cy+sin*radius-h/2);
+    if(!insideShape(item,region)||anchors.some(p=>overlaps(item,p,s.gap)))continue;
+    const distance=anchors.length?Math.min(...anchors.map(p=>Math.acos(Math.max(-1,Math.min(1,Math.cos(angle-p.angle)))))):Math.PI-Math.acos(Math.cos(angle+Math.PI/2-phase*.15));
+    const quality=distance+(rotation===preferred?.08:0);
+    if(quality>score){score=quality;best={...item,edge:'circle',angle}}
+   }
+  }
+  if(best){anchors.push(best);area+=best.w*best.h}
+ }
+ return anchors;
+}
+
+function tryLayout(words,s,scale,metricCache){
+ const omitted=[],random=rand(s.seed),gap=s.gap,font=FONTS[s.font],max=Math.max(...words.map(w=>w.size),12),region=shapeRegion(s),round=region.shape==='circle';
+ words=words.map(w=>({...w,layoutSize:max*Math.pow(w.size/max,s.contrast/100)}));
+ const placed=s.edgeAlign!==false&&words.length>=12?(round?circularBorder:rectangularBorder)(words,s,scale,metricCache,region):[];
+ const anchored=new Set(placed.map(p=>p.id));
+ for(let index=0;index<words.length;index++){
+  if(anchored.has(words[index].id))continue;
+  const word=words[index],baseSize=max*Math.pow(word.size/max,s.contrast/100),size=Math.max(4,baseSize*scale),key=word.id+'|'+size.toFixed(4),m=metricCache.get(key)||metrics(word,size,font);metricCache.set(key,m);
+  const preferVertical=s.direction==='mixed'&&index>0&&random()<.28,rotations=hasCustomAngle(word)?[word.angle]:s.direction==='mixed'?(preferVertical?[90,0]:[0,90]):[0];
+  let result=null;
+  const offset=random()*Math.PI*2;
+  const scatter=s.edgeAlign!==false&&index>=Math.min(5,Math.floor(words.length/4)),targetRandom=rand(s.seed+index*7919),targetX=region.x+region.w*(.08+targetRandom()*.84),targetY=region.y+region.h*(.08+targetRandom()*.84);
+  for(const rotation of rotations){
+   const {w,h}=rotatedBounds(m,rotation);if(w>region.w||h>region.h)continue;
+   const candidate=(cx,cy)=>{const box={x:Math.round(cx-w/2),y:Math.round(cy-h/2),w,h};if(!insideShape(box,region))return null;for(const p of placed)if(overlaps(box,p,gap))return null;return{...word,...box,size,rotation,tx:m.tx,ty:m.ty,localWidth:m.width,localHeight:m.height,cx:box.x+w/2,cy:box.y+h/2}};
+   const samples=2200;
+   for(let n=0;n<samples;n++){
+    const radius=Math.sqrt(n/(samples-1)),angle=n*2.3999632297+offset,cos=Math.cos(angle),sin=Math.sin(angle);
+    const edge=round?1:Math.max(Math.abs(cos),Math.abs(sin));
+    const rx=round?region.r:(region.w-w)/2,ry=round?region.r:(region.h-h)/2;
+    result=candidate((scatter?targetX:region.cx)+cos/edge*radius*rx,(scatter?targetY:region.cy)+sin/edge*radius*ry);if(result)break;
+   }
+   if(!result){let best=Infinity;const step=Math.max(5,Math.floor(Math.min(region.w,region.h)/100));for(let y=Math.ceil(region.y);y<=region.y+region.h-h;y+=step)for(let x=Math.ceil(region.x);x<=region.x+region.w-w;x+=step){const dx=Math.abs((x+w/2-region.cx)/region.w),dy=Math.abs((y+h/2-region.cy)/region.h),d=round?dx*dx+dy*dy:Math.max(dx,dy);if(d>=best)continue;const c=candidate(x+w/2,y+h/2);if(c){result=c;best=d}}}
+   if(result)break;
+  }
+  if(result)placed.push(result);else omitted.push(word);
+ }
+ if(s.edgeAlign!==false&&words.length<12)alignSparsePerimeter(placed,region,gap);
+ return{placed,omitted,scale,width:s.width,height:s.height,gap:s.gap,shape:region.shape};
+}
+function estimateScale(words,s){
+ const max=Math.max(...words.map(w=>w.size),12),font=FONTS[s.font],region=shapeRegion(s);let area=0,limit=1;
+ for(const word of words){
+  const size=max*Math.pow(word.size/max,s.contrast/100),m=metrics(word,size,font),rotations=hasCustomAngle(word)?[word.angle]:(s.direction==='mixed'?[0,90]:[0]);
+  let fit=0,minArea=Infinity;
+  for(const rotation of rotations){const box=rotatedBounds(m,rotation);let f=Math.min(region.w/box.w,region.h/box.h);if(region.shape==='circle')f=Math.min(f,2*region.r/Math.hypot(box.w,box.h));fit=Math.max(fit,f);minArea=Math.min(minArea,(box.w+s.gap)*(box.h+s.gap))}
+  area+=minArea;limit=Math.min(limit,fit);
+ }
+ const available=region.shape==='circle'?Math.PI*region.r*region.r:region.w*region.h;
+ return Math.min(1,limit<1?limit*.98:1,Math.sqrt(available*.65/Math.max(area,1)));
+}
+// Color/background changes preserve manual positions; geometry changes trigger a new layout.
+function layoutSignature(words,settings){
+ const geometry=['width','height','shape','direction','font','gap','edgeAlign','edgePadding','contrast','seed'].map(k=>[k,settings[k]]);
+ const value={words:words.map(w=>[w.id,w.text,w.size]).sort((a,b)=>a[0].localeCompare(b[0])),geometry},angles=words.filter(hasCustomAngle).map(w=>[w.id,w.angle]).sort((a,b)=>a[0].localeCompare(b[0]));if(angles.length)value.angles=angles;return JSON.stringify(value);
+}
+function manualSnapshot(layout,words,settings){
+ return{key:layoutSignature(words,settings),scale:layout.scale,positions:layout.placed.map(p=>({id:p.id,x:p.x,y:p.y,size:p.size,rotation:p.rotation}))};
+}
+function readManualLayout(saved,words,settings){
+ if(!saved||saved.key!==layoutSignature(words,settings)||!Number.isFinite(saved.scale)||saved.scale<=0||saved.scale>1||!Array.isArray(saved.positions)||saved.positions.length!==words.length)return null;
+ const available=new Set(words.map(w=>w.id)),seen=new Set(),positions=[];
+ for(const p of saved.positions){
+  if(!p||!available.has(p.id)||seen.has(p.id)||![p.x,p.y,p.size].every(Number.isFinite)||p.size<4||p.size>300||!Number.isFinite(p.rotation)||Math.abs(p.rotation)>180)return null;
+  const word=words.find(w=>w.id===p.id);if(hasCustomAngle(word)?Math.abs(normalizeAngle(p.rotation)-word.angle)>.001:(settings.direction==='horizontal'&&p.rotation!==0))return null;
+  seen.add(p.id);positions.push({id:p.id,x:p.x,y:p.y,size:p.size,rotation:p.rotation});
+ }
+ return{key:saved.key,scale:saved.scale,positions};
+}
+function restoreManualLayout(saved,words,settings){
+ const clean=readManualLayout(saved,words,settings);if(!clean)return null;
+ const byId=new Map(words.map(w=>[w.id,w])),placed=[],region=shapeRegion(settings);
+ for(const p of clean.positions){
+  const word=byId.get(p.id),m=metrics(word,p.size,FONTS[settings.font]),item=placedWord(word,{size:p.size,m},p.rotation,p.x,p.y);
+  if(!insideShape(item,region)||placed.some(q=>overlaps(item,q,settings.gap-.01)))return null;
+  placed.push(item);
+ }
+ return{placed,omitted:[],scale:clean.scale,width:settings.width,height:settings.height,gap:settings.gap,shape:settings.shape,manual:true,key:clean.key};
+}
+function moveValidation(word,x,y,layout,settings){
+ if(!word||![x,y].every(Number.isFinite))return{ok:false,reason:'invalid'};
+ const moved={...word,x,y,cx:x+word.w/2,cy:y+word.h/2};
+ if(!insideShape(moved,shapeRegion(settings)))return{ok:false,reason:'outside',moved};
+ if(layout.placed.some(p=>p.id!==word.id&&overlaps(moved,p,settings.gap-.01)))return{ok:false,reason:'overlap',moved};
+ return{ok:true,moved};
+}
+function updateLayoutStatus(layout,settings){
+ const count=state.words.length,omitted=layout.omitted.length,small=layout.placed.some(w=>w.size<12);
+ if(!count){setStatus('添加词语后，词云将在这里出现。',`${SHAPES[settings.shape]} · 文字不重叠`);return}
+ const main=omitted?`已排布 ${layout.placed.length}/${count} 个词；${omitted} 个词暂未放入。`:`${count} 个词语，已检查无重叠`;
+ const right=omitted?'请增大画布或减少词语':layout.manual?'手动排版已保存 · 拖拽继续调整':`${SHAPES[settings.shape]}${settings.edgeAlign?' · 自然贴边':''} · 字号适配 ${Math.round(layout.scale*100)}%${small?' · 部分文字较小':' · 拖拽可微调'}`;
+ setStatus(main,right,omitted>0);
+}
+function commitWordMove(id,x,y){
+ if(!lastLayout||lastLayout.key!==layoutSignature(state.words,state.settings))return{ok:false,reason:'stale'};
+ const index=lastLayout.placed.findIndex(p=>p.id===id),word=lastLayout.placed[index],check=moveValidation(word,x,y,lastLayout,state.settings);
+ if(!check.ok)return check;
+ if(Math.hypot(x-word.x,y-word.y)<.01)return{ok:true,unchanged:true};
+ // Keep the exact pre-drag layout in undo history, including the first manual move.
+ state.manualLayout=manualSnapshot(lastLayout,state.words,state.settings);remember();
+ const moved={...check.moved};delete moved.edge;delete moved.angle;
+ lastLayout.placed[index]=moved;lastLayout.manual=true;selected=id;
+ state.manualLayout=manualSnapshot(lastLayout,state.words,state.settings);persist();
+ draw(lastLayout,state.settings);updateLayoutStatus(lastLayout,state.settings);
+ [...$('cloud').querySelectorAll('g[data-word-id]')].find(g=>g.dataset.wordId===id)?.focus({preventScroll:true});
+ return{ok:true,moved};
+}
+function pointerInCanvas(event){
+ const svg=$('cloud'),matrix=svg.getScreenCTM();if(!matrix)return null;
+ try{const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;return point.matrixTransform(matrix.inverse())}catch{return null}
+}
+function dragOutline(word,className){
+ const r=document.createElementNS(NS,'rect');r.setAttribute('class',className);r.setAttribute('x',word.x-2);r.setAttribute('y',word.y-2);r.setAttribute('width',word.w+4);r.setAttribute('height',word.h+4);r.setAttribute('rx','3');$('cloud').append(r);return r;
+}
+function beginWordDrag(event){
+ if(dragSession||event.button!==0||event.isPrimary===false)return;
+ const group=event.target.closest?.('g[data-word-id]');if(!group||!$('cloud').contains(group))return;
+ if(layoutBusy||!lastLayout||lastLayout.key!==layoutSignature(state.words,state.settings)){toast('正在更新排版，请稍后拖动。');return}
+ const origin=lastLayout.placed.find(p=>p.id===group.dataset.wordId),point=pointerInCanvas(event);if(!origin||!point)return;
+ event.preventDefault();group.focus({preventScroll:true});
+ if(layoutBusy||lastLayout.key!==layoutSignature(state.words,state.settings)){toast('词语编辑已提交，排版完成后即可拖动。');return}
+ selectWord(origin.id);
+ dragSession={pointerId:event.pointerId,group,origin:{...origin},start:point,clientX:event.clientX,clientY:event.clientY,moved:false,candidate:{...origin},check:{ok:true}};
+ try{$('cloud').setPointerCapture(event.pointerId)}catch{dragSession=null}
+}
+function moveWordDrag(event){
+ const drag=dragSession;if(!drag||event.pointerId!==drag.pointerId)return;
+ const point=pointerInCanvas(event);if(!point)return;
+ if(!drag.moved&&Math.hypot(event.clientX-drag.clientX,event.clientY-drag.clientY)<4)return;
+ event.preventDefault();
+ if(!drag.moved){drag.moved=true;for(const r of $('cloud').querySelectorAll('.selection'))r.remove();drag.originOutline=dragOutline(drag.origin,'drag-origin');drag.outline=dragOutline(drag.origin,'drag-outline');$('cloud').classList.add('drag-active');drag.group.classList.add('dragging')}
+ const x=drag.origin.x+point.x-drag.start.x,y=drag.origin.y+point.y-drag.start.y;
+ drag.check=moveValidation(drag.origin,x,y,lastLayout,state.settings);drag.candidate=drag.check.moved;
+ if(!drag.candidate)return;
+ const p=drag.candidate;moveWordBounds(p,drag.check.ok);drag.group.setAttribute('transform',`translate(${p.cx} ${p.cy}) rotate(${p.rotation})`);
+ drag.outline.setAttribute('x',x-2);drag.outline.setAttribute('y',y-2);drag.outline.classList.toggle('invalid',!drag.check.ok);
+ setStatus(drag.check.ok?'位置可用，松开即可保存':drag.check.reason==='outside'?'超出形状边界，松开将回到原位':'与其他词语距离过近，松开将回到原位','Esc 取消拖动',!drag.check.ok);
+}
+function finishWordDrag(event,cancelled=false){
+ const drag=dragSession;if(!drag||(event&&event.pointerId!==drag.pointerId))return;
+ if(event&&!cancelled)moveWordDrag(event);
+ dragSession=null;
+ try{if($('cloud').hasPointerCapture(drag.pointerId))$('cloud').releasePointerCapture(drag.pointerId)}catch{}
+ $('cloud').classList.remove('drag-active');drag.group.classList.remove('dragging');drag.originOutline?.remove();drag.outline?.remove();
+ if(!drag.moved){if(!cancelled)selectWord(drag.origin.id,true);return}
+ if(!cancelled&&drag.check.ok){const result=commitWordMove(drag.origin.id,drag.candidate.x,drag.candidate.y);if(result.ok&&!result.unchanged)return}
+ draw(lastLayout,state.settings);updateLayoutStatus(lastLayout,state.settings);
+ if(cancelled)toast('已取消拖动。');else if(!drag.check.ok)toast(drag.check.reason==='outside'?'词语超出形状边界，已恢复原位。':'当前位置会与其他词语重叠或过近，已恢复原位。');
+}
+function onWordKey(event){
+ const group=event.target.closest?.('g[data-word-id]');if(!group||dragSession||layoutBusy)return;
+ if(event.key==='Enter'||event.key===' '){event.preventDefault();selectWord(group.dataset.wordId,true);return}
+ const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];if(!delta)return;
+ event.preventDefault();const word=lastLayout?.placed.find(p=>p.id===group.dataset.wordId);if(!word)return;
+ const step=event.shiftKey?10:1,result=commitWordMove(word.id,word.x+delta[0]*step,word.y+delta[1]*step);
+ if(!result.ok)toast(result.reason==='outside'?'已到达形状边界。':'与其他词语距离过近，请换个方向移动。');
+ else [...$('cloud').querySelectorAll('g[data-word-id]')].find(g=>g.dataset.wordId===word.id)?.focus({preventScroll:true});
+}
+
+function nextFrame(){return new Promise(r=>requestAnimationFrame(r))}
+async function generate(version){
+ layoutBusy=true;$('cloud').setAttribute('aria-busy','true');syncRotationControls();
+ try{
+ const s={...state.settings},words=state.words.map(w=>({...w})).sort((a,b)=>b.size-a.size),cache=new Map();
+ $('canvas-meta').textContent=`${s.width} × ${s.height} px · ${SHAPES[s.shape]} · ${s.transparent?'透明背景':'纯色背景'}`;$('cloud').setAttribute('viewBox',`0 0 ${s.width} ${s.height}`);$('canvas-wrap').classList.toggle('checker',s.transparent);$('canvas-wrap').style.backgroundColor=s.transparent?'':s.background;
+ if(!words.length){state.manualLayout=null;lastLayout={placed:[],omitted:[],scale:1,width:s.width,height:s.height,gap:s.gap,key:layoutSignature(state.words,s)};draw(lastLayout,s);setStatus('添加词语后，词云将在这里出现。',`${SHAPES[s.shape]} · 文字不重叠`);return}
+ const restored=restoreManualLayout(state.manualLayout,state.words,s);
+ if(restored){lastLayout=restored;draw(restored,s);updateLayoutStatus(restored,s);return}
+ if(state.manualLayout){state.manualLayout=null;persist()}
+ setStatus('正在自动排布…','保留文字间距');await nextFrame();if(version!==renderVersion)return;
+ let layout,best=null;const startScale=estimateScale(words,s);
+ for(let attempt=0;attempt<22;attempt++){
+  const scale=startScale*Math.pow(.90,attempt);layout=tryLayout(words,s,scale,cache);if(!best||layout.placed.length>best.placed.length)best=layout;
+  if(!layout.omitted.length)break;
+  if(attempt%2===1){await nextFrame();if(version!==renderVersion)return}
+ }
+ if(version!==renderVersion)return;
+ if(layout.omitted.length)layout=best;
+ // Verify shape containment and spacing using full glyph bounds, including overhangs.
+ for(const p of layout.placed)if(!insideShape(p,shapeRegion(s)))throw new Error('检测到词语超出形状边界，请重新排布。');
+ for(let i=0;i<layout.placed.length;i++)for(let j=i+1;j<layout.placed.length;j++)if(overlaps(layout.placed[i],layout.placed[j],s.gap-.01))throw new Error('检测到排布冲突，请重新排布。');
+ layout.key=layoutSignature(state.words,s);lastLayout=layout;draw(layout,s);
+ updateLayoutStatus(layout,s);
+ }finally{if(version===renderVersion){layoutBusy=false;$('cloud').setAttribute('aria-busy','false');syncRotationControls()}}
+}
+function setStatus(main,right,warning=false){const e=$('layout-status');e.classList.toggle('warning',warning);e.querySelector('span').textContent=main;$('scale-status').textContent=right}
+function draw(layout,s){
+ const svg=$('cloud');svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${s.width} ${s.height}`);svg.setAttribute('aria-label',`${SHAPES[s.shape]}词云预览，共 ${layout.placed.length} 个词语，可拖动调整位置`);
+ if(!s.transparent){const bg=document.createElementNS(NS,'rect');bg.setAttribute('width',s.width);bg.setAttribute('height',s.height);bg.setAttribute('fill',s.background);svg.append(bg)}
+ if(!layout.placed.length){const t=document.createElementNS(NS,'text');t.setAttribute('x',s.width/2);t.setAttribute('y',s.height/2);t.setAttribute('text-anchor','middle');t.setAttribute('font-family',FONTS.sans);t.setAttribute('font-size',Math.min(s.width/22,38));t.setAttribute('class','empty-canvas');t.textContent='你的下一个灵感，从一个词开始';svg.append(t);drawEditorGuides(layout,s);return}
+ for(const p of layout.placed){const g=document.createElementNS(NS,'g');g.setAttribute('transform',`translate(${p.cx} ${p.cy}) rotate(${p.rotation})`);g.dataset.wordId=p.id;g.dataset.bounds=[p.x,p.y,p.w,p.h].join(',');g.setAttribute('class','draggable-word');g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',`${p.text}，拖动调整位置，方向键微调，Enter 编辑`);const text=document.createElementNS(NS,'text');text.setAttribute('x',p.tx);text.setAttribute('y',p.ty);text.setAttribute('font-family',FONTS[s.font]);text.setAttribute('font-weight','800');text.setAttribute('font-size',p.size);text.setAttribute('fill',p.color);text.setAttribute('xml:space','preserve');text.textContent=p.text;const title=document.createElementNS(NS,'title');title.textContent=`${p.text} · 字号 ${p.size.toFixed(1)} px · ${p.rotation}° · 拖动调整位置`;const hit=document.createElementNS(NS,'rect');hit.setAttribute('class','word-hit');hit.setAttribute('x',-p.localWidth/2);hit.setAttribute('y',-p.localHeight/2);hit.setAttribute('width',p.localWidth);hit.setAttribute('height',p.localHeight);hit.setAttribute('fill','transparent');g.append(title,hit,text);svg.append(g)}
+ drawEditorGuides(layout,s);
+ if(selected)selectWord(selected);else syncRotationControls();
+}
+function schedule(delay=100){if(dragSession)finishWordDrag(null,true);layoutBusy=true;$('cloud').setAttribute('aria-busy','true');syncRotationControls();persist();clearTimeout(renderTimer);const version=++renderVersion;renderTimer=setTimeout(()=>generate(version).catch(e=>{console.error(e);toast(e.message);setStatus('排布未完成，请重新排布。','调整画布后重试',true)}),delay)}
+async function ensureLayout(){clearTimeout(renderTimer);await generate(++renderVersion);if(!lastLayout||lastLayout.omitted.length)throw new Error('还有词语未放入画布，请增大画布或减少词语后导出。')}
+function refreshAll(){renderWords();syncSettings();schedule(0)}
+function confirmReplace(message,action){if(!state.words.length){action();return}$('confirm-message').textContent=message+' 你可以使用“撤销”恢复。';pendingConfirm=action;$('confirm-dialog').showModal()}
+function projectObject(){return{app:'词云工坊',version:8,words:state.words.map(({id,text,size,color,angle})=>({id,text,size,color,...(Number.isFinite(angle)?{angle}:{})})),settings:{...state.settings},editorGuides:readEditorGuides(state.editorGuides),manualLayout:readManualLayout(state.manualLayout,state.words,state.settings)}}
+function filename(ext){const d=new Date();return`词云_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.${ext}`}
+function saveBlob(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000)}
+function saveJSON(){saveBlob(new Blob([JSON.stringify(projectObject(),null,2)],{type:'application/json;charset=utf-8'}),filename('json'));toast('配置已导出，可随时导入继续编辑。')}
+function svgBlob(){const svg=$('cloud').cloneNode(true);svg.removeAttribute('id');svg.removeAttribute('role');svg.removeAttribute('aria-label');svg.removeAttribute('aria-busy');svg.setAttribute('width',state.settings.width);svg.setAttribute('height',state.settings.height);for(const n of svg.querySelectorAll('.selection,.empty-canvas,.drag-origin,.drag-outline,.word-hit,.editor-guides'))n.remove();for(const n of svg.querySelectorAll('[data-word-id]')){n.removeAttribute('data-word-id');n.removeAttribute('data-bounds');n.removeAttribute('tabindex');n.removeAttribute('role');n.removeAttribute('aria-label');n.removeAttribute('class')}return new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml;charset=utf-8'})}
+function updateExportInfo(){const mult=Number($('export-scale').value),s=state.settings;$('scale-label').hidden=format!=='png';$('export-scale').hidden=format!=='png';$('export-info').textContent=format==='png'?`${s.width*mult} × ${s.height*mult} px · ${s.transparent?'透明背景':'纯色背景'}`:format==='svg'?'矢量图可任意放大；在其他设备打开时，字体可能不同。':'包含词语、字号、颜色、固定角度、画布设置及手动拖拽位置。'}
+$('add-form').addEventListener('submit',e=>{e.preventDefault();const text=$('new-word').value.trim();if(!text)return;if(state.words.length>=150){toast('最多支持 150 个词语。');return}remember();const w={id:uid(),text,size:Math.round(clamp(Number($('new-size').value)||48,12,300)),color:$('new-color').value};state.words.unshift(w);selected=w.id;$('new-word').value='';renderWords();$('word-list').scrollTop=0;schedule(0);$('new-word').focus()});
+$('sort-words').addEventListener('click',()=>{remember();state.words.sort((a,b)=>b.size-a.size);renderWords();persist()});
+$('undo').addEventListener('click',()=>{if(!history.length)return;state=JSON.parse(history.pop());selected=null;refreshAll();toast('已撤销上一次更改。')});
+for(const name of['words','settings']){$(`tab-${name}`).addEventListener('click',()=>changeTab(name));$(`tab-${name}`).addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const other=name==='words'?'settings':'words';changeTab(other);$(`tab-${other}`).focus()}})}
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>confirmReplace('将使用所选示例替换当前词语。',()=>{remember();state.words=PRESETS[Number(b.dataset.preset)].map(w=>({...w,id:uid()}));selected=null;state.settings=freshSettings();refreshAll();toast('示例已载入，可以继续编辑。')})));
+$('new-project').addEventListener('click',()=>confirmReplace('将清空当前词语。',()=>{remember();state.words=[];selected=null;state.settings=freshSettings();refreshAll();changeTab('words');$('new-word').focus()}));
+$('confirm-action').addEventListener('click',()=>{$('confirm-dialog').close();pendingConfirm?.();pendingConfirm=null});
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));
+$('open-bulk').addEventListener('click',()=>{$('bulk-error').hidden=true;$('bulk-dialog').showModal();$('bulk-text').focus()});
+$('submit-bulk').addEventListener('click',()=>{try{const lines=$('bulk-text').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(!lines.length)throw new Error('请先输入词语。');if(state.words.length+lines.length>150)throw new Error('添加后不能超过 150 个词语。');const words=lines.map((line,i)=>{const cells=line.split(/[,，\t]/).map(x=>x.trim());if(cells.length>3)throw new Error(`第 ${i+1} 行格式有误，请使用：词语, 字号, #颜色。`);const text=cells[0],size=cells[1]?Number(cells[1]):Number($('new-size').value),color=cells[2]||$('new-color').value;if(!text||text.length>60)throw new Error(`第 ${i+1} 行词语需为 1–60 个字符。`);if(!Number.isFinite(size)||size<12||size>300)throw new Error(`第 ${i+1} 行字号应为 12–300。`);if(!validColor(color))throw new Error(`第 ${i+1} 行颜色需为 #RRGGBB 格式，如 #FF9F43。`);return{id:uid(),text,size:Math.round(size),color}});remember();state.words.push(...words);$('bulk-text').value='';$('bulk-dialog').close();renderWords();schedule(0);toast(`已添加 ${words.length} 个词语。`)}catch(e){$('bulk-error').textContent=e.message;$('bulk-error').hidden=false}});
+document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>{if(state.settings.shape===b.dataset.shape)return;remember();state.settings.shape=b.dataset.shape;selected=null;syncSettings();schedule(0)}));
+for(const[id,key,min,max]of[['canvas-width','width',320,2400],['canvas-height','height',240,1800]])$(id).addEventListener('change',()=>{if(!$(id).value){syncSettings();return}remember();state.settings[key]=Math.round(clamp(Number($(id).value)||min,min,max));syncSettings();schedule()});
+for(const[id,key]of[['direction','direction'],['font-family','font'],['background','background']])$(id).addEventListener('change',()=>{remember();state.settings[key]=$(id).value;if(key==='font')syncFontPreview();schedule()});
+$('edge-align').addEventListener('change',()=>{remember();state.settings.edgeAlign=$('edge-align').checked;schedule(0)});
+$('edge-padding').addEventListener('input',()=>{state.settings.edgePadding=Number($('edge-padding').value);syncRangeLabels();schedule(160)});
+$('edge-padding').addEventListener('pointerdown',remember);
+$('edge-padding').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))remember()});
+$('transparent').addEventListener('change',()=>{remember();state.settings.transparent=$('transparent').checked;$('background').disabled=state.settings.transparent;schedule()});
+$('size-preset').addEventListener('change',()=>{if(!$('size-preset').value)return;remember();const[w,h]=$('size-preset').value.split(',').map(Number);state.settings.width=w;state.settings.height=h;syncSettings();schedule()});
+for(const id of['gap','contrast']){let started=false;$(id).addEventListener('input',()=>{if(!started){remember();started=true}state.settings[id]=Number($(id).value);syncRangeLabels();schedule(160)});$(id).addEventListener('change',()=>{started=false})}
+for(const p of PALETTES){const b=document.createElement('button');b.className='palette';b.title=p.name;b.setAttribute('aria-label',`应用${p.name}配色`);for(const c of p.colors){const dot=document.createElement('span');dot.style.background=c;b.append(dot)}b.addEventListener('click',()=>{remember();state.words.forEach((w,i)=>w.color=p.colors[i%p.colors.length]);renderWords();schedule();toast(`已应用${p.name}配色。`)});$('palettes').append(b)}
+$('relayout').addEventListener('click',()=>{remember();state.settings.seed=(state.settings.seed+9137)>>>0;state.manualLayout=null;selected=null;schedule(0)});
+$('save-project').addEventListener('click',saveJSON);$('import-project').addEventListener('click',()=>$('project-file').click());
+$('project-file').addEventListener('change',async()=>{const file=$('project-file').files[0];if(!file)return;try{if(file.size>1000000)throw new Error('配置文件过大，请选择小于 1 MB 的 JSON 文件。');const imported=normalize(JSON.parse(await file.text()));confirmReplace(`将导入 ${imported.words.length} 个词语，并替换当前词云。`,()=>{remember();state=imported;selected=null;refreshAll();toast('配置导入成功。')})}catch(e){toast('无法导入：'+e.message)}finally{$('project-file').value=''}});
+$('open-export').addEventListener('click',()=>{if(!state.words.length){toast('请先添加词语，再导出图片。');return}updateExportInfo();$('export-dialog').showModal()});
+document.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>{format=b.dataset.format;document.querySelectorAll('[data-format]').forEach(x=>x.classList.toggle('active',x===b));updateExportInfo()}));$('export-scale').addEventListener('change',updateExportInfo);
+$('download').addEventListener('click',async()=>{const button=$('download');button.disabled=true;button.textContent='正在导出…';try{if(format==='json'){saveJSON()}else{await document.fonts.ready;await ensureLayout();if(format==='svg'){saveBlob(svgBlob(),filename('svg'));toast('SVG 已导出。')}else{const blob=svgBlob(),url=URL.createObjectURL(blob);try{const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('图片渲染失败，请尝试导出 SVG。'));img.src=url});const scale=Number($('export-scale').value),canvas=document.createElement('canvas');canvas.width=state.settings.width*scale;canvas.height=state.settings.height*scale;canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw new Error('PNG 导出失败，请选择更小的清晰度。');saveBlob(png,filename('png'));toast('高清 PNG 已导出。')}finally{URL.revokeObjectURL(url)}}}$('export-dialog').close()}catch(e){toast(e.message)}finally{button.disabled=false;button.textContent='下载文件'}});
+$('show-word-bounds').addEventListener('change',changeEditorGuides);
+$('show-canvas-border').addEventListener('change',changeEditorGuides);
+$('rotation-form').addEventListener('submit',e=>{e.preventDefault();const input=$('word-angle');if(!input.value.trim()){toast('请输入旋转角度。');return}setWordAngle(selected,Number(input.value))});
+for(const button of document.querySelectorAll('[data-angle]'))button.addEventListener('click',()=>setWordAngle(selected,Number(button.dataset.angle)));
+$('auto-angle').addEventListener('click',()=>setWordAngle(selected,null));
+$('cloud').addEventListener('pointerdown',beginWordDrag);
+$('cloud').addEventListener('pointermove',moveWordDrag);
+$('cloud').addEventListener('pointerup',e=>finishWordDrag(e));
+$('cloud').addEventListener('pointercancel',e=>finishWordDrag(e,true));
+$('cloud').addEventListener('lostpointercapture',e=>finishWordDrag(e,true));
+$('cloud').addEventListener('keydown',onWordKey);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dragSession){e.preventDefault();finishWordDrag(null,true)}});
+window.addEventListener('blur',()=>{if(dragSession)finishWordDrag(null,true)});
+document.addEventListener('keydown',e=>{const editing=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(!editing&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(dragSession)finishWordDrag(null,true);else $('undo').click()}});
+document.fonts.ready.then(()=>{renderWords();syncSettings();schedule(0)});
+</script>
+</body>
+</html>
